@@ -4,7 +4,7 @@ import { useState } from "react";
 
 export default function ClientChat({ slug }) {
   const [question, setQuestion] = useState("");
-  const [messages, setMessages] = useState([]); // {role, text}
+  const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
 
   async function ask(e) {
@@ -36,43 +36,59 @@ export default function ClientChat({ slug }) {
   }
 
   return (
-    <section className="mt-12">
-      <h2 className="text-xl font-bold mb-4 text-gold">Ask about this client</h2>
-      <div className="bg-panel border border-white/10 rounded-xl p-5">
-        {messages.length > 0 && (
-          <div className="space-y-3 mb-4 max-h-72 overflow-y-auto">
-            {messages.map((m, i) => (
-              <div
-                key={i}
-                className={m.role === "user" ? "text-gray-300" : "text-white"}
-              >
-                <span className="text-xs uppercase tracking-wide text-gray-500 mr-2">
-                  {m.role === "user" ? "You" : "Claude"}
-                </span>
-                {m.text}
-              </div>
-            ))}
-            {loading && (
-              <div className="text-gray-500 text-sm">Thinking...</div>
-            )}
-          </div>
-        )}
-        <form onSubmit={ask} className="flex gap-2">
-          <input
-            value={question}
-            onChange={(e) => setQuestion(e.target.value)}
-            placeholder="e.g. Why did rankings drop this week?"
-            className="flex-1 bg-black/40 border border-white/10 rounded-full px-4 py-2.5 text-sm placeholder:text-gray-600 focus:outline-none focus:border-gold"
-          />
-          <button
-            type="submit"
-            disabled={loading}
-            className="bg-gold text-black font-bold text-sm px-5 py-2.5 rounded-full disabled:opacity-50"
-          >
-            Ask
-          </button>
-        </form>
+    <div style={{ background: "#111", borderRadius: 12, padding: "28px 32px", marginTop: 40 }}>
+      <div style={{ fontSize: 10, letterSpacing: "0.18em", fontWeight: 800, color: "#cda158", textTransform: "uppercase", marginBottom: 16 }}>
+        Ask About This Client
       </div>
-    </section>
+
+      {messages.length > 0 && (
+        <div style={{ marginBottom: 16, maxHeight: 260, overflowY: "auto" }}>
+          {messages.map((m, i) => (
+            <p key={i} style={{ fontSize: 14, lineHeight: 1.85, color: m.role === "user" ? "rgba(255,255,255,.6)" : "rgba(255,255,255,.9)", marginBottom: 10 }}>
+              <span style={{ fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: "#666", marginRight: 8 }}>
+                {m.role === "user" ? "You" : "Claude"}
+              </span>
+              {m.text}
+            </p>
+          ))}
+          {loading && <p style={{ color: "#666", fontSize: 13 }}>Thinking...</p>}
+        </div>
+      )}
+
+      <form onSubmit={ask} style={{ display: "flex", gap: 8 }}>
+        <input
+          value={question}
+          onChange={(e) => setQuestion(e.target.value)}
+          placeholder="e.g. Why did rankings drop this week?"
+          style={{
+            flex: 1,
+            background: "rgba(255,255,255,.06)",
+            border: "1px solid rgba(255,255,255,.12)",
+            borderRadius: 30,
+            padding: "10px 18px",
+            fontSize: 13,
+            color: "#fff",
+            outline: "none",
+          }}
+        />
+        <button
+          type="submit"
+          disabled={loading}
+          style={{
+            background: "#cda158",
+            color: "#000",
+            fontWeight: 700,
+            fontSize: 13,
+            padding: "10px 22px",
+            borderRadius: 30,
+            border: "none",
+            opacity: loading ? 0.5 : 1,
+            cursor: loading ? "default" : "pointer",
+          }}
+        >
+          Ask
+        </button>
+      </form>
+    </div>
   );
 }
