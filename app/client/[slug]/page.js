@@ -49,12 +49,12 @@ export default async function ClientPage({ params }) {
       <Link href="/" className="text-sm text-gray-400 hover:text-gold">
         ← All clients
       </Link>
-      <h1 className="text-3xl font-800 mt-4">{client.clinic_name}</h1>
+      <h1 className="text-3xl font-extrabold mt-4">{client.clinic_name}</h1>
       <p className="text-gray-400 mb-10">{client.owner_name}</p>
 
       {/* Keyword rankings */}
       <section className="mb-12">
-        <h2 className="text-xl font-700 mb-4 text-gold">Keyword Rankings</h2>
+        <h2 className="text-xl font-bold mb-4 text-gold">Keyword Rankings</h2>
         {keywords.length === 0 ? (
           <p className="text-gray-500 text-sm">No ranking data yet.</p>
         ) : (
@@ -65,7 +65,7 @@ export default async function ClientPage({ params }) {
                 className="flex justify-between items-center px-5 py-3"
               >
                 <span>{k.keyword}</span>
-                <span className={`font-700 ${rankColor(k.position)}`}>
+                <span className={`font-bold ${rankColor(k.position)}`}>
                   {k.position ? `#${k.position}` : "Not ranked"}
                 </span>
               </div>
@@ -76,7 +76,7 @@ export default async function ClientPage({ params }) {
 
       {/* AI visibility */}
       <section className="mb-12">
-        <h2 className="text-xl font-700 mb-4 text-gold">AI Visibility</h2>
+        <h2 className="text-xl font-bold mb-4 text-gold">AI Visibility</h2>
         {ai.length === 0 ? (
           <p className="text-gray-500 text-sm">AI tracking not set up for this client.</p>
         ) : (
@@ -87,7 +87,7 @@ export default async function ClientPage({ params }) {
                 className="flex justify-between items-center px-5 py-3"
               >
                 <span className="capitalize">{a.engine.replace(/_/g, " ")}</span>
-                <span className={`font-700 ${mentionColor(a.mentioned)}`}>
+                <span className={`font-bold ${mentionColor(a.mentioned)}`}>
                   {a.mentioned ? "Mentioned in tracked prompt" : "Not mentioned"}
                 </span>
               </div>
@@ -98,7 +98,7 @@ export default async function ClientPage({ params }) {
 
       {/* Local pack */}
       <section>
-        <h2 className="text-xl font-700 mb-4 text-gold">Local Pack Rankings</h2>
+        <h2 className="text-xl font-bold mb-4 text-gold">Local Pack Rankings</h2>
         {local.length === 0 ? (
           <p className="text-gray-500 text-sm">
             No Local Falcon data yet for this client.
@@ -112,7 +112,7 @@ export default async function ClientPage({ params }) {
               >
                 <div className="flex justify-between items-start mb-2">
                   <div>
-                    <div className="font-700">{l.keyword}</div>
+                    <div className="font-bold">{l.keyword}</div>
                     <div className="text-sm text-gray-400">
                       {l.location_label}
                     </div>
