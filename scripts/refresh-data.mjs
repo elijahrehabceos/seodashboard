@@ -172,46 +172,55 @@ async function refreshAiVisibility(client) {
 async function refreshLocalPack(client) {
   if (!client.local_falcon_place_id) return 0; // not mapped yet
 
-  const list = await lfPost("/v1/reports/", {
-    place_id: client.local_falcon_place_id,
-    limit: "20",
-  });
+  const placeIds = client.local_falcon_place_id.split(",").map((s) => s.trim()).filter(Boolean);
+  let totalRows = 0;
 
-  const reports = list?.data?.reports || [];
-  if (!reports.length) return 0;
-
-  // group by keyword, keep the most recent report per keyword
-  const latestByKeyword = new Map();
-  for (const r of reports) {
-    const existing = latestByKeyword.get(r.keyword);
-    if (!existing || Number(r.timestamp) > Number(existing.timestamp)) {
-      latestByKeyword.set(r.keyword, r);
-    }
-  }
-
-  const rows = [];
-  for (const r of latestByKeyword.values()) {
-    rows.push({
-      client_slug: client.slug,
-      keyword: r.keyword,
-      location_label: r.location?.name || client.clinic_name,
-      arp: isFinite(Number(r.arp)) ? Number(r.arp) : null,
-      atrp: isFinite(Number(r.atrp)) ? Number(r.atrp) : null,
-      solv: isFinite(Number(r.solv)) ? Number(r.solv) : null,
-      heatmap_url: r.heatmap || r.image || null,
-      report_key: r.report_key,
-      scan_date: r.date ? new Date(r.date).toISOString().slice(0, 10) : null,
-      updated_at: new Date().toISOString(),
+  for (const placeId of placeIds) {
+    const list = await lfPost("/v1/reports/", {
+      place_id: placeId,
+      limit: "20",
     });
+
+    const reports = list?.data?.reports || [];
+    if (!reports.length) continue;
+
+    // group by keyword, keep the most recent report per keyword for this location
+    const latestByKeyword = new Map();
+    for (const r of reports) {
+      const existing = latestByKeyword.get(r.keyword);
+      if (!existing || Number(r.timestamp) > Number(existing.timestamp)) {
+        latestByKeyword.set(r.keyword, r);
+      }
+    }
+
+    const rows = [];
+    for (const r of latestByKeyword.values()) {
+      rows.push({
+        client_slug: client.slug,
+        keyword: r.keyword,
+        location_label: r.location?.name || `${client.clinic_name} (${placeId.slice(-6)})`,
+        arp: isFinite(Number(r.arp)) ? Number(r.arp) : null,
+        atrp: isFinite(Number(r.atrp)) ? Number(r.atrp) : null,
+        solv: isFinite(Number(r.solv)) ? Number(r.solv) : null,
+        heatmap_url: r.heatmap || r.image || null,
+        report_key: r.report_key,
+        scan_date: r.date ? new Date(r.date).toISOString().slice(0, 10) : null,
+        updated_at: new Date().toISOString(),
+      });
+    }
+
+    if (rows.length) {
+      const { error } = await supabase
+        .from("local_pack")
+        .upsert(rows, { onConflict: "client_slug,keyword,location_label" });
+      if (error) throw error;
+      totalRows += rows.length;
+    }
+
+    await new Promise((r) => setTimeout(r, 200)); // pace multi-location lookups
   }
 
-  if (rows.length) {
-    const { error } = await supabase
-      .from("local_pack")
-      .upsert(rows, { onConflict: "client_slug,keyword,location_label" });
-    if (error) throw error;
-  }
-  return rows.length;
+  return totalRows;
 }
 
 async function upsertClientRecord(client) {

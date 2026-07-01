@@ -1,57 +1,442 @@
 [
-  {"slug": "avila-pt", "clinic_name": "Avila Physical Therapy", "owner_name": "Anthony Avila", "domain": "avilaphysicaltherapy.com", "site_id": 12010088, "local_falcon_place_id": null},
-  {"slug": "reborn-pelvic-health", "clinic_name": "Reborn Pelvic Health & Wellness", "owner_name": "Betty DeLass", "domain": "rebornphw.com", "site_id": 12010892, "local_falcon_place_id": null},
-  {"slug": "pt-group-of-florida", "clinic_name": "Physical Therapy Group of Florida", "owner_name": "Giovanna Bossio", "domain": "physicaltherapygroupofflorida.com", "site_id": 12010322, "local_falcon_place_id": null},
-  {"slug": "direct-orthopedic-therapy", "clinic_name": "Direct Orthopedic Therapy", "owner_name": "Jonson Y", "domain": "directorthopedictherapy.com", "site_id": 12359438, "local_falcon_place_id": null},
-  {"slug": "tribeca-pt", "clinic_name": "Tribeca Physical Therapy", "owner_name": "Kristian Marcial", "domain": "tribecaphysicaltherapy.com", "site_id": 12011075, "local_falcon_place_id": null},
-  {"slug": "universus-pt", "clinic_name": "Universus Physical Therapy", "owner_name": "Shaden Ghattas", "domain": "universuspt.com", "site_id": 12011105, "local_falcon_place_id": null},
-  {"slug": "pt-360", "clinic_name": "PT 360\u00b0 Sports Medicine & Spine Therapy", "owner_name": "Shelly Coffman", "domain": "pt-360.com", "site_id": 12011126, "local_falcon_place_id": null},
-  {"slug": "hill-promotion-pt", "clinic_name": "Hill Pro-Motion Physical Therapy", "owner_name": "Zak Hill", "domain": "hillpromotionpt.com", "site_id": 12011141, "local_falcon_place_id": null},
-  {"slug": "empower-pt-wellness", "clinic_name": "Empower Physical Therapy and Wellness", "owner_name": "Carlo Sayo", "domain": "empowerptwellness.com", "site_id": 12022004, "local_falcon_place_id": null},
-  {"slug": "specialized-pt", "clinic_name": "Specialized Physical Therapy", "owner_name": "Paul Vidal", "domain": "specializedphysicaltherapy.com", "site_id": 12022169, "local_falcon_place_id": null},
-  {"slug": "ervin-pt", "clinic_name": "Ervin Physical Therapy", "owner_name": "Isaac Ervin", "domain": "ervinpt.com", "site_id": 12022325, "local_falcon_place_id": null},
-  {"slug": "restore-your-core-pt", "clinic_name": "Restore Your Core Physical Therapy", "owner_name": "Amy Robinson", "domain": "restoreyourcorept.com", "site_id": 12022355, "local_falcon_place_id": null},
-  {"slug": "carroll-pt", "clinic_name": "Carroll Physical Therapy", "owner_name": "Dan Carroll", "domain": "carrollpt.com", "site_id": 12022406, "local_falcon_place_id": null},
-  {"slug": "kansas-pt-partners", "clinic_name": "Kansas Physical Therapy Partners", "owner_name": "Jordan Zuccarelli", "domain": "kansasptpartners.com", "site_id": 12022460, "local_falcon_place_id": null},
-  {"slug": "ability-allies-pt", "clinic_name": "Ability Allies Physical Therapy", "owner_name": "Natalie Tilton", "domain": "abilityallies.com", "site_id": 12340112, "local_falcon_place_id": null},
-  {"slug": "dpt-pt-performance", "clinic_name": "DPT Physical Therapy & Performance", "owner_name": "Darin Deaton | Trey Taylor", "domain": "dpttherapy.com", "site_id": 12022742, "local_falcon_place_id": null},
-  {"slug": "core-pt", "clinic_name": "Core Physical Therapy", "owner_name": "Blase Strobl", "domain": "coreptwi.com", "site_id": 12022835, "local_falcon_place_id": null},
-  {"slug": "hope-therapy-center", "clinic_name": "Hope Therapy Center", "owner_name": "Sonya Brooks", "domain": "hopetherapycenter.net", "site_id": 12048905, "local_falcon_place_id": null},
-  {"slug": "king-pt-fitness", "clinic_name": "King Physical Therapy & Fitness", "owner_name": "Jarrod Matthew", "domain": "kingptandfitness.com", "site_id": 12048968, "local_falcon_place_id": null},
-  {"slug": "dynamic-pt", "clinic_name": "Dynamic Physical Therapy", "owner_name": "Matthew Nelson", "domain": "dynamicptut.com", "site_id": 12049067, "local_falcon_place_id": null},
-  {"slug": "next-level-pt-athletic", "clinic_name": "Next Level Physical Therapy & Athletic Performance", "owner_name": "Amy Wunsch", "domain": "nextlevel-pt.com", "site_id": 12049112, "local_falcon_place_id": null},
-  {"slug": "surge-mobile-pt", "clinic_name": "Surge Mobile Physical Therapy", "owner_name": "Sergio Martinez", "domain": "surgemobilephysicaltherapy.com", "site_id": 12049160, "local_falcon_place_id": null},
-  {"slug": "gerihab-pt-wellness", "clinic_name": "GeriHab Physical Therapy and Wellness", "owner_name": "Michael Chua", "domain": "gerihabjackson.com", "site_id": 12056798, "local_falcon_place_id": null},
-  {"slug": "elite-pt", "clinic_name": "Elite Physical Therapy", "owner_name": "Kenny Holder", "domain": "elitetherapypt.com", "site_id": 12112478, "local_falcon_place_id": null},
-  {"slug": "optimal-therapy-nwa", "clinic_name": "Optimal Therapy of NWA", "owner_name": "Brian Kent", "domain": "optimaltherapynwa.com", "site_id": 12119420, "local_falcon_place_id": null},
-  {"slug": "abilene-pt-sports-rehab", "clinic_name": "Abilene Physical Therapy & Sports Rehab", "owner_name": "Taci Wilson", "domain": "abileneptsportsrehab.com", "site_id": 12483023, "local_falcon_place_id": null},
-  {"slug": "focus-pt", "clinic_name": "Focus Physical Therapy", "owner_name": "Brad Conder", "domain": "physicaltherapylouisville.com", "site_id": 12049709, "local_falcon_place_id": null},
-  {"slug": "back-on-track-pt", "clinic_name": "Back on Track Physical Therapy", "owner_name": "Cameron Dennis", "domain": "botohio.com", "site_id": 12058478, "local_falcon_place_id": null},
-  {"slug": "developmental-steps", "clinic_name": "Developmental Steps", "owner_name": "Hayley Apiscopa", "domain": "developmentalsteps.com", "site_id": 12058499, "local_falcon_place_id": null},
-  {"slug": "rutherford-pt", "clinic_name": "Rutherford Physical Therapy", "owner_name": "John Talty", "domain": "rutherfordpt.com", "site_id": 12058517, "local_falcon_place_id": null},
-  {"slug": "next-level-pt-houston", "clinic_name": "Next Level Physical Therapy", "owner_name": "Jack Wong", "domain": "nextlevelpthouston.com", "site_id": 12058529, "local_falcon_place_id": null},
-  {"slug": "thera-rehab-wellness", "clinic_name": "TheraRehab and Wellness", "owner_name": "Mark Anthony Rodriguez", "domain": "therarehabandwellness.com", "site_id": 12058568, "local_falcon_place_id": null},
-  {"slug": "greiner-pt", "clinic_name": "Greiner Physical Therapy", "owner_name": "Seth Greiner", "domain": "greinerphysicaltherapy.com", "site_id": 12066413, "local_falcon_place_id": null},
-  {"slug": "simply-physio", "clinic_name": "Simply Physio", "owner_name": "John Mark Chesney", "domain": "simplypt.com", "site_id": 12066422, "local_falcon_place_id": null},
-  {"slug": "total-health-rehab-boca", "clinic_name": "Total Health & Rehab Center of Boca Raton", "owner_name": "Mike Minett", "domain": "totalhealthandrehab.com", "site_id": 12066431, "local_falcon_place_id": null},
-  {"slug": "back-worx", "clinic_name": "The Back WoRX", "owner_name": "Neil Holmes", "domain": "thebackworx.com", "site_id": 12066437, "local_falcon_place_id": null},
-  {"slug": "wave-pt-pilates", "clinic_name": "WAVE Physical Therapy & Pilates", "owner_name": "Sarah Crawford", "domain": "makeawavecincy.com", "site_id": 12066443, "local_falcon_place_id": null},
-  {"slug": "body-moksha-pt", "clinic_name": "Body Moksha Physical Therapy", "owner_name": "Tejal Ramaiya", "domain": "bodymoksha.com", "site_id": 12066452, "local_falcon_place_id": null},
-  {"slug": "marino-physiotherapy", "clinic_name": "Marino Physiotherapy", "owner_name": "Alaina Marino", "domain": "marinophysio.com", "site_id": 12066458, "local_falcon_place_id": null},
-  {"slug": "mid-county-pt", "clinic_name": "Mid-County Physical Therapy", "owner_name": "Daniel Mills", "domain": "midcountypt.com", "site_id": 12066464, "local_falcon_place_id": null},
-  {"slug": "kaizen-health-wellness", "clinic_name": "Kaizen Health and Wellness", "owner_name": "Bryan Ladd", "domain": "kaizendsm.com", "site_id": 12066482, "local_falcon_place_id": null},
-  {"slug": "movement-guild", "clinic_name": "The Movement Guild", "owner_name": "Adam Wolf", "domain": "movementguild.com", "site_id": 12066503, "local_falcon_place_id": null},
-  {"slug": "sculpt-u-pt", "clinic_name": "Sculpt U Physical Therapy", "owner_name": "Ryan & Clay Ardoin", "domain": "sculptupt.com", "site_id": 12066515, "local_falcon_place_id": null},
-  {"slug": "purpose-pt", "clinic_name": "Purpose Physical Therapy", "owner_name": "Ken Clark", "domain": "purposephysicaltherapy.com", "site_id": 12066527, "local_falcon_place_id": null},
-  {"slug": "magnolia-pt", "clinic_name": "Magnolia Physical Therapy", "owner_name": "Beth Winkler", "domain": "magnoliatherapyla.com", "site_id": 12066533, "local_falcon_place_id": null},
-  {"slug": "rose-city-pt", "clinic_name": "Rose City Physical Therapy", "owner_name": "Karl Kolbeck", "domain": "rosecitypt.com", "site_id": 12066551, "local_falcon_place_id": null},
-  {"slug": "shift-therapy-wellness", "clinic_name": "Shift Therapy and Wellness", "owner_name": "Lindsey Bellcase", "domain": "shift.physio", "site_id": 12066569, "local_falcon_place_id": null},
-  {"slug": "change-the-game-performance", "clinic_name": "Change The Game Performance", "owner_name": "Ryan Godfrey", "domain": "changethegamept.com", "site_id": 12066575, "local_falcon_place_id": null},
-  {"slug": "root-therapy-wellness", "clinic_name": "Root Therapy and Wellness", "owner_name": "Theo Peterson & Kezia Peterson", "domain": "rootbozeman.com", "site_id": 12066584, "local_falcon_place_id": null},
-  {"slug": "aging-in-place-specialists", "clinic_name": "Aging in Place Specialists", "owner_name": "Kathryn Cieniewicz", "domain": "aginginplacede.com", "site_id": 12066587, "local_falcon_place_id": null},
-  {"slug": "wellsprings-health", "clinic_name": "Wellsprings Health", "owner_name": "Leslie Wakefield", "domain": "wellspringshealth.net", "site_id": 12066593, "local_falcon_place_id": null},
-  {"slug": "peak-pt", "clinic_name": "Peak Physical Therapy", "owner_name": "Eric Gonsalves / Brianna Landry", "domain": "peakptmdt.com", "site_id": 12066599, "local_falcon_place_id": null},
-  {"slug": "athlete-pro", "clinic_name": "Athlete Pro", "owner_name": "Taylor Holland", "domain": "athletepro.co", "site_id": 12066602, "local_falcon_place_id": null},
-  {"slug": "movement-clinic", "clinic_name": "The Movement Clinic", "owner_name": "Jordan McCormack", "domain": "movementclinicpt.com", "site_id": 12172658, "local_falcon_place_id": null},
-  {"slug": "precision-physio-avi-singh", "clinic_name": "Precision Physiotherapy, Peak Performance, and Elevation", "owner_name": "Avi Singh", "domain": "precisionphysio.ca", "site_id": 12243503, "local_falcon_place_id": null}
+  {
+    "slug": "avila-pt",
+    "clinic_name": "Avila Physical Therapy",
+    "owner_name": "Anthony Avila",
+    "domain": "avilaphysicaltherapy.com",
+    "site_id": 12010088,
+    "local_falcon_place_id": "ChIJnY9g8s_1aIYRfet4LshU9oQ,ChIJ0ePNrJYpZoYRw6e4DsvApE8"
+  },
+  {
+    "slug": "reborn-pelvic-health",
+    "clinic_name": "Reborn Pelvic Health & Wellness",
+    "owner_name": "Betty DeLass",
+    "domain": "rebornphw.com",
+    "site_id": 12010892,
+    "local_falcon_place_id": "ChIJX8oXK0abTYcRoGTkLIxg8sE,ChIJkQSBZyd9VIcRo6t_A6kIdsk,ChIJz3AlvJybTYcRYVecV8zFEfg,ChIJ0flGKseFUocRFfOIYvHObUA,ChIJy9hjKHcDU4cRoW7cTSg2vnA"
+  },
+  {
+    "slug": "pt-group-of-florida",
+    "clinic_name": "Physical Therapy Group of Florida",
+    "owner_name": "Giovanna Bossio",
+    "domain": "physicaltherapygroupofflorida.com",
+    "site_id": 12010322,
+    "local_falcon_place_id": "ChIJFTqDEw4C2YgRj-UtrxrSadg,ChIJawBW95cF2YgRcqrEIG4B1fA"
+  },
+  {
+    "slug": "direct-orthopedic-therapy",
+    "clinic_name": "Direct Orthopedic Therapy",
+    "owner_name": "Jonson Y",
+    "domain": "directorthopedictherapy.com",
+    "site_id": 12359438,
+    "local_falcon_place_id": "ChIJM7IFc91J5IgRCGEDHldOxcw,ChIJ7ZWhCcc35IgRgXG8gDKDmrc"
+  },
+  {
+    "slug": "tribeca-pt",
+    "clinic_name": "Tribeca Physical Therapy",
+    "owner_name": "Kristian Marcial",
+    "domain": "tribecaphysicaltherapy.com",
+    "site_id": 12011075,
+    "local_falcon_place_id": "ChIJpZo0r6hbwokR6FrNq5I9SaM"
+  },
+  {
+    "slug": "universus-pt",
+    "clinic_name": "Universus Physical Therapy",
+    "owner_name": "Shaden Ghattas",
+    "domain": "universuspt.com",
+    "site_id": 12011105,
+    "local_falcon_place_id": "ChIJheqbCxYm6IkRcoP6Uuagwpk"
+  },
+  {
+    "slug": "pt-360",
+    "clinic_name": "PT 360\u00b0 Sports Medicine & Spine Therapy",
+    "owner_name": "Shelly Coffman",
+    "domain": "pt-360.com",
+    "site_id": 12011126,
+    "local_falcon_place_id": "ChIJeatHdaCglVQRI84bDL4WtE4"
+  },
+  {
+    "slug": "hill-promotion-pt",
+    "clinic_name": "Hill Pro-Motion Physical Therapy",
+    "owner_name": "Zak Hill",
+    "domain": "hillpromotionpt.com",
+    "site_id": 12011141,
+    "local_falcon_place_id": "ChIJnZ4QAb8dwYcR6mDwLFmPBWQ,ChIJJSHMoMcfwYcRD_225Sc9OFM"
+  },
+  {
+    "slug": "empower-pt-wellness",
+    "clinic_name": "Empower Physical Therapy and Wellness",
+    "owner_name": "Carlo Sayo",
+    "domain": "empowerptwellness.com",
+    "site_id": 12022004,
+    "local_falcon_place_id": "ChIJC6mOCwTN3IARgn16886lu08,ChIJNYmHRNUvw4ARXkSiV18RzNo,ChIJkQqc5UIzw4AREzildsBnYU4"
+  },
+  {
+    "slug": "specialized-pt",
+    "clinic_name": "Specialized Physical Therapy",
+    "owner_name": "Paul Vidal",
+    "domain": "specializedphysicaltherapy.com",
+    "site_id": 12022169,
+    "local_falcon_place_id": "ChIJP0acWbI0wYkRtm6VyUmcnWk"
+  },
+  {
+    "slug": "ervin-pt",
+    "clinic_name": "Ervin Physical Therapy",
+    "owner_name": "Isaac Ervin",
+    "domain": "ervinpt.com",
+    "site_id": 12022325,
+    "local_falcon_place_id": "ChIJpXS4-ntBcIgR6QPZhdmmVg8,ChIJBX3s86IpcIgRwlhS14-01iM"
+  },
+  {
+    "slug": "restore-your-core-pt",
+    "clinic_name": "Restore Your Core Physical Therapy",
+    "owner_name": "Amy Robinson",
+    "domain": "restoreyourcorept.com",
+    "site_id": 12022355,
+    "local_falcon_place_id": "ChIJlyx0wV2tbIgRdD7aAjMROJw,ChIJzZCdAKSrFIgR2OhmaWJlrwY,ChIJ8YDGHcZCa4gRHN5kdSvF2hk,ChIJOVbFNjKtFIgR99tdku0HDDw"
+  },
+  {
+    "slug": "carroll-pt",
+    "clinic_name": "Carroll Physical Therapy",
+    "owner_name": "Dan Carroll",
+    "domain": "carrollpt.com",
+    "site_id": 12022406,
+    "local_falcon_place_id": "ChIJO9QCvLEJw4kRbN7zhMwraKo,ChIJSUmdywoKw4kRegwFm--zg4E"
+  },
+  {
+    "slug": "kansas-pt-partners",
+    "clinic_name": "Kansas Physical Therapy Partners",
+    "owner_name": "Jordan Zuccarelli",
+    "domain": "kansasptpartners.com",
+    "site_id": 12022460,
+    "local_falcon_place_id": "ChIJ6-KgcmTFvIcRVBRZx7HOWxE,ChIJD4NXWKXJvIcRLGogBwc5opw"
+  },
+  {
+    "slug": "ability-allies-pt",
+    "clinic_name": "Ability Allies Physical Therapy",
+    "owner_name": "Natalie Tilton",
+    "domain": "abilityallies.com",
+    "site_id": 12340112,
+    "local_falcon_place_id": "ChIJBwbHUArr4okRchbGw0VpHOo,ChIJE_K9olbr4okR5OPj3EtAGdM,ChIJi71Oxpu_4okRdOFdsd2ROi0,ChIJgw-Nu1iW4okRM4LHGRWLF4M"
+  },
+  {
+    "slug": "dpt-pt-performance",
+    "clinic_name": "DPT Physical Therapy & Performance",
+    "owner_name": "Darin Deaton | Trey Taylor",
+    "domain": "dpttherapy.com",
+    "site_id": 12022742,
+    "local_falcon_place_id": "ChIJ_5_7iRCxUYYR65BjXu8W5og,ChIJfeuViCv1UYYRcmG-eU-BKN8,ChIJocSo0clt_oYRt96Yr_E9hJU,ChIJSRZx1JUpToYRAB4DxaT4sZg,ChIJTV2GfOX7UIYR9Kjr25ffR0U"
+  },
+  {
+    "slug": "core-pt",
+    "clinic_name": "Core Physical Therapy",
+    "owner_name": "Blase Strobl",
+    "domain": "coreptwi.com",
+    "site_id": 12022835,
+    "local_falcon_place_id": "ChIJg0lOvNUwBogRVyVFp94vD9I"
+  },
+  {
+    "slug": "hope-therapy-center",
+    "clinic_name": "Hope Therapy Center",
+    "owner_name": "Sonya Brooks",
+    "domain": "hopetherapycenter.net",
+    "site_id": 12048905,
+    "local_falcon_place_id": "ChIJ6wBrDL2GO4YRfOgkl4Jkq-o"
+  },
+  {
+    "slug": "king-pt-fitness",
+    "clinic_name": "King Physical Therapy & Fitness",
+    "owner_name": "Jarrod Matthew",
+    "domain": "kingptandfitness.com",
+    "site_id": 12048968,
+    "local_falcon_place_id": "ChIJZU82WHwoNYgRVeUw8E5FPkU,ChIJb8CrqTslNYgR0LG3r7lSrbU"
+  },
+  {
+    "slug": "dynamic-pt",
+    "clinic_name": "Dynamic Physical Therapy",
+    "owner_name": "Matthew Nelson",
+    "domain": "dynamicptut.com",
+    "site_id": 12049067,
+    "local_falcon_place_id": "ChIJlyP3kX9iUocRT0vMt1TAeho,ChIJgbar4HBhUocRZVo4xFZ2B9M"
+  },
+  {
+    "slug": "next-level-pt-athletic",
+    "clinic_name": "Next Level Physical Therapy & Athletic Performance",
+    "owner_name": "Amy Wunsch",
+    "domain": "nextlevel-pt.com",
+    "site_id": 12049112,
+    "local_falcon_place_id": "ChIJ2wzAhYuGwoAR5WSPjg014t0,ChIJJYfeTC6JwoARkfetMWK3ao8"
+  },
+  {
+    "slug": "surge-mobile-pt",
+    "clinic_name": "Surge Mobile Physical Therapy",
+    "owner_name": "Sergio Martinez",
+    "domain": "surgemobilephysicaltherapy.com",
+    "site_id": 12049160,
+    "local_falcon_place_id": "ChIJ42KZDgSXb4YRVYpyKCw6nBU,ChIJ97c4j5SRb4YR_Zd9zS9y9kk"
+  },
+  {
+    "slug": "gerihab-pt-wellness",
+    "clinic_name": "GeriHab Physical Therapy and Wellness",
+    "owner_name": "Michael Chua",
+    "domain": "gerihabjackson.com",
+    "site_id": 12056798,
+    "local_falcon_place_id": "ChIJQ2z-GKdteYgRhoVHnGK-Vvc,ChIJZ5bgBainfogRQZaSw2JQjYk,ChIJCaMRGASje4gRaxFCUHDcSzA,ChIJ8f5uramNWogRZq2MPNKu_QE,ChIJiZwuWfymfogRM2if7NxRrK8"
+  },
+  {
+    "slug": "elite-pt",
+    "clinic_name": "Elite Physical Therapy",
+    "owner_name": "Kenny Holder",
+    "domain": "elitetherapypt.com",
+    "site_id": 12112478,
+    "local_falcon_place_id": "ChIJy9eHn2ANzYcRdXi7J-osF7Y,ChIJbQM-66qD0ocRpXUA3fSTSiI"
+  },
+  {
+    "slug": "optimal-therapy-nwa",
+    "clinic_name": "Optimal Therapy of NWA",
+    "owner_name": "Brian Kent",
+    "domain": "optimaltherapynwa.com",
+    "site_id": 12119420,
+    "local_falcon_place_id": "ChIJ5RnR4s4RyYcR7C14tkCDr3Y"
+  },
+  {
+    "slug": "abilene-pt-sports-rehab",
+    "clinic_name": "Abilene Physical Therapy & Sports Rehab",
+    "owner_name": "Taci Wilson",
+    "domain": "abileneptsportsrehab.com",
+    "site_id": 12483023,
+    "local_falcon_place_id": "ChIJcUgjboLwvIcRmR-2cwiN5Bc,ChIJGYx0Xk9XvIcR27VO8a7CAes"
+  },
+  {
+    "slug": "focus-pt",
+    "clinic_name": "Focus Physical Therapy",
+    "owner_name": "Brad Conder",
+    "domain": "physicaltherapylouisville.com",
+    "site_id": 12049709,
+    "local_falcon_place_id": "ChIJ__-_LMChaYgRFlcltVfumF0"
+  },
+  {
+    "slug": "back-on-track-pt",
+    "clinic_name": "Back on Track Physical Therapy",
+    "owner_name": "Cameron Dennis",
+    "domain": "botohio.com",
+    "site_id": 12058478,
+    "local_falcon_place_id": "ChIJUyz5J1P5PogRgW4POHTPwfU,ChIJXTW8XdDzPogRRnDh-ymRfKM"
+  },
+  {
+    "slug": "developmental-steps",
+    "clinic_name": "Developmental Steps",
+    "owner_name": "Hayley Apiscopa",
+    "domain": "developmentalsteps.com",
+    "site_id": 12058499,
+    "local_falcon_place_id": "ChIJF7KXlkGXwokRdDGhlthNhv0,ChIJ77c6dm66wokRl5kahDC4D2Y"
+  },
+  {
+    "slug": "rutherford-pt",
+    "clinic_name": "Rutherford Physical Therapy",
+    "owner_name": "John Talty",
+    "domain": "rutherfordpt.com",
+    "site_id": 12058517,
+    "local_falcon_place_id": "ChIJjaHJh8_4wokRRrq4UnH8w70"
+  },
+  {
+    "slug": "next-level-pt-houston",
+    "clinic_name": "Next Level Physical Therapy",
+    "owner_name": "Jack Wong",
+    "domain": "nextlevelpthouston.com",
+    "site_id": 12058529,
+    "local_falcon_place_id": "ChIJxT5uY22zQIYRMwDBbQh_Bzw"
+  },
+  {
+    "slug": "thera-rehab-wellness",
+    "clinic_name": "TheraRehab and Wellness",
+    "owner_name": "Mark Anthony Rodriguez",
+    "domain": "therarehabandwellness.com",
+    "site_id": 12058568,
+    "local_falcon_place_id": "ChIJv-9CNXSfToYR5zvO4Io8VGo"
+  },
+  {
+    "slug": "greiner-pt",
+    "clinic_name": "Greiner Physical Therapy",
+    "owner_name": "Seth Greiner",
+    "domain": "greinerphysicaltherapy.com",
+    "site_id": 12066413,
+    "local_falcon_place_id": "ChIJR4jEkSbx6IkRM4jywczwFT8,ChIJ4RFBR_3z6IkRYmiRCnGxtX8"
+  },
+  {
+    "slug": "simply-physio",
+    "clinic_name": "Simply Physio",
+    "owner_name": "John Mark Chesney",
+    "domain": "simplypt.com",
+    "site_id": 12066422,
+    "local_falcon_place_id": "ChIJNY5PtOYuXIgRt1fSUrQihQA"
+  },
+  {
+    "slug": "total-health-rehab-boca",
+    "clinic_name": "Total Health & Rehab Center of Boca Raton",
+    "owner_name": "Mike Minett",
+    "domain": "totalhealthandrehab.com",
+    "site_id": 12066431,
+    "local_falcon_place_id": "ChIJ_ZFPsase2YgRMSKT9jZraWI"
+  },
+  {
+    "slug": "back-worx",
+    "clinic_name": "The Back WoRX",
+    "owner_name": "Neil Holmes",
+    "domain": "thebackworx.com",
+    "site_id": 12066437,
+    "local_falcon_place_id": "ChIJ57cahWcXw4gRt6TFvnwOt8o"
+  },
+  {
+    "slug": "wave-pt-pilates",
+    "clinic_name": "WAVE Physical Therapy & Pilates",
+    "owner_name": "Sarah Crawford",
+    "domain": "makeawavecincy.com",
+    "site_id": 12066443,
+    "local_falcon_place_id": "ChIJuTbZOCdTQIgRwlq7ugAVxt0,ChIJVR61Z4hTQIgRApRcVJ_79Bs"
+  },
+  {
+    "slug": "body-moksha-pt",
+    "clinic_name": "Body Moksha Physical Therapy",
+    "owner_name": "Tejal Ramaiya",
+    "domain": "bodymoksha.com",
+    "site_id": 12066452,
+    "local_falcon_place_id": "ChIJ1UwMDPKlw4kRO6af82Bm3U0"
+  },
+  {
+    "slug": "marino-physiotherapy",
+    "clinic_name": "Marino Physiotherapy",
+    "owner_name": "Alaina Marino",
+    "domain": "marinophysio.com",
+    "site_id": 12066458,
+    "local_falcon_place_id": "ChIJN8pE7_AlXIgRR5M9l6Fl_Rs"
+  },
+  {
+    "slug": "mid-county-pt",
+    "clinic_name": "Mid-County Physical Therapy",
+    "owner_name": "Daniel Mills",
+    "domain": "midcountypt.com",
+    "site_id": 12066464,
+    "local_falcon_place_id": "ChIJ7xhP4nNXtokRUS1DZdy0EPg,ChIJkw-esTlUtokRw_X4lEscSck"
+  },
+  {
+    "slug": "kaizen-health-wellness",
+    "clinic_name": "Kaizen Health and Wellness",
+    "owner_name": "Bryan Ladd",
+    "domain": "kaizendsm.com",
+    "site_id": 12066482,
+    "local_falcon_place_id": "ChIJ84CLpu2F7ocR8njtYnHCb-0"
+  },
+  {
+    "slug": "movement-guild",
+    "clinic_name": "The Movement Guild",
+    "owner_name": "Adam Wolf",
+    "domain": "movementguild.com",
+    "site_id": 12066503,
+    "local_falcon_place_id": "ChIJV7sDvR_ND4gR1bIhciOrdfY,ChIJy8GzDgQtDogR1gmwlr-1EVo"
+  },
+  {
+    "slug": "sculpt-u-pt",
+    "clinic_name": "Sculpt U Physical Therapy",
+    "owner_name": "Ryan & Clay Ardoin",
+    "domain": "sculptupt.com",
+    "site_id": 12066515,
+    "local_falcon_place_id": "ChIJEVeNBqTAQIYRYy7yRjv_n14,ChIJ8xDMY6FhXIYRTho6-gYbkTM"
+  },
+  {
+    "slug": "purpose-pt",
+    "clinic_name": "Purpose Physical Therapy",
+    "owner_name": "Ken Clark",
+    "domain": "purposephysicaltherapy.com",
+    "site_id": 12066527,
+    "local_falcon_place_id": "ChIJdV63kQzjwogRiUVkIVcmGgU"
+  },
+  {
+    "slug": "magnolia-pt",
+    "clinic_name": "Magnolia Physical Therapy",
+    "owner_name": "Beth Winkler",
+    "domain": "magnoliatherapyla.com",
+    "site_id": 12066533,
+    "local_falcon_place_id": "ChIJPQOhEiKhIIYR7IffRM-z65k"
+  },
+  {
+    "slug": "rose-city-pt",
+    "clinic_name": "Rose City Physical Therapy",
+    "owner_name": "Karl Kolbeck",
+    "domain": "rosecitypt.com",
+    "site_id": 12066551,
+    "local_falcon_place_id": "ChIJx_Hjy_wJlVQRT-l3AMJOS3Y"
+  },
+  {
+    "slug": "shift-therapy-wellness",
+    "clinic_name": "Shift Therapy and Wellness",
+    "owner_name": "Lindsey Bellcase",
+    "domain": "shift.physio",
+    "site_id": 12066569,
+    "local_falcon_place_id": "ChIJ01X_zyZP9YgR__kw1HOC34I,ChIJBeG96muliogRscF5TzMkWcs"
+  },
+  {
+    "slug": "change-the-game-performance",
+    "clinic_name": "Change The Game Performance",
+    "owner_name": "Ryan Godfrey",
+    "domain": "changethegamept.com",
+    "site_id": 12066575,
+    "local_falcon_place_id": "ChIJAQDQjtsfqokRR2peRZCiN0k"
+  },
+  {
+    "slug": "root-therapy-wellness",
+    "clinic_name": "Root Therapy and Wellness",
+    "owner_name": "Theo Peterson & Kezia Peterson",
+    "domain": "rootbozeman.com",
+    "site_id": 12066584,
+    "local_falcon_place_id": "ChIJJzU4wl1FRVMRELIX_nYi7G0"
+  },
+  {
+    "slug": "aging-in-place-specialists",
+    "clinic_name": "Aging in Place Specialists",
+    "owner_name": "Kathryn Cieniewicz",
+    "domain": "aginginplacede.com",
+    "site_id": 12066587,
+    "local_falcon_place_id": "ChIJW7yggjW4uIkRzCQ2RXCwXj4"
+  },
+  {
+    "slug": "wellsprings-health",
+    "clinic_name": "Wellsprings Health",
+    "owner_name": "Leslie Wakefield",
+    "domain": "wellspringshealth.net",
+    "site_id": 12066593,
+    "local_falcon_place_id": "ChIJY6DueJir2YgRMCbX4QQ2IDg"
+  },
+  {
+    "slug": "peak-pt",
+    "clinic_name": "Peak Physical Therapy",
+    "owner_name": "Eric Gonsalves / Brianna Landry",
+    "domain": "peakptmdt.com",
+    "site_id": 12066599,
+    "local_falcon_place_id": "ChIJtXjK1-tp5IkRFQQq-I4dsoI"
+  },
+  {
+    "slug": "athlete-pro",
+    "clinic_name": "Athlete Pro",
+    "owner_name": "Taylor Holland",
+    "domain": "athletepro.co",
+    "site_id": 12066602,
+    "local_falcon_place_id": "ChIJNVe6S0JHw4gRQds0k27co0U"
+  },
+  {
+    "slug": "movement-clinic",
+    "clinic_name": "The Movement Clinic",
+    "owner_name": "Jordan McCormack",
+    "domain": "movementclinicpt.com",
+    "site_id": 12172658,
+    "local_falcon_place_id": "ChIJcU6n0xTDwoARHRZeXm8wSOU"
+  },
+  {
+    "slug": "precision-physio-avi-singh",
+    "clinic_name": "Precision Physiotherapy, Peak Performance, and Elevation",
+    "owner_name": "Avi Singh",
+    "domain": "precisionphysio.ca",
+    "site_id": 12243503,
+    "local_falcon_place_id": "ChIJ68B-_02aLIgRanN_-ZhvrSM,ChIJaznmvRJ3LIgRHgD_EqLG9S4,ChIJSbtkuYaELIgRA8H5VJVcQQg,ChIJp4Bb0VphK4gR82Ee24Viovs,ChIJzakLn7qFLIgRu546dtEiMac,ChIJ03iYOdiXLIgR9ajS-WgDwzI,ChIJJUI2z6BR04kRwnN_jC3gwPk"
+  }
 ]
