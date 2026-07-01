@@ -1,0 +1,28 @@
+name: Daily data refresh
+
+on:
+  schedule:
+    # 6:00 AM Philippines time = 22:00 UTC (previous day)
+    - cron: "0 22 * * *"
+  workflow_dispatch: {} # lets you trigger it manually from the Actions tab
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm install @supabase/supabase-js
+
+      - name: Run refresh script
+        env:
+          SE_RANKING_API_KEY: ${{ secrets.SE_RANKING_API_KEY }}
+          LOCAL_FALCON_API_KEY: ${{ secrets.LOCAL_FALCON_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/refresh-data.mjs
