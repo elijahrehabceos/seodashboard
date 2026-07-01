@@ -1,7 +1,7 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "CEOs SEO",
+  title: "Rehab CEOs SEO Dashboard",
   description: "Live SEO dashboard for RCEOs Digital Marketing clients",
 };
 

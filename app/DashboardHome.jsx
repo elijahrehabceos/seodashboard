@@ -3,13 +3,6 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 
-function getGreeting() {
-  const h = new Date().getHours();
-  if (h < 12) return "Good morning";
-  if (h < 18) return "Good afternoon";
-  return "Good evening";
-}
-
 function initials(name) {
   return name
     .split(" ")
@@ -52,15 +45,14 @@ export default function DashboardHome({ clients }) {
       <div className="relative max-w-6xl mx-auto px-6 pt-20 pb-16">
         <div className="flex items-center gap-2 text-xs tracking-[0.2em] uppercase text-gold/70 mb-6">
           <span className="w-1.5 h-1.5 rounded-full bg-gold inline-block" />
-          CEOs SEO
+          REHAB CEOS
         </div>
 
         <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight leading-tight">
-          {getGreeting()}, <span className="text-gold">Elijah</span>.
+          REHAB CEOS <span className="text-gold">SEO DASHBOARD</span>
         </h1>
         <p className="text-gray-400 mt-3 text-lg">
-          {clients.length} clients tracked. Rankings, AI visibility, and local
-          pack, refreshed daily.
+          Rankings, AI visibility, and local pack, refreshed daily.
         </p>
 
         {/* search */}
