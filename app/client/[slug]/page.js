@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import ClientChat from "./ClientChat";
 
 export const revalidate = 3600;
 
 async function getClientData(slug) {
-  const [{ data: client }, { data: keywords }, { data: ai }, { data: local }] =
+  const [{ data: client }, { data: keywords }, { data: ai }, { data: local }, { data: insight }] =
     await Promise.all([
       supabase.from("clients").select("*").eq("slug", slug).single(),
       supabase
@@ -14,9 +15,16 @@ async function getClientData(slug) {
         .order("position", { ascending: true }),
       supabase.from("ai_visibility").select("*").eq("client_slug", slug),
       supabase.from("local_pack").select("*").eq("client_slug", slug),
+      supabase.from("client_insights").select("*").eq("client_slug", slug).maybeSingle(),
     ]);
 
-  return { client, keywords: keywords || [], ai: ai || [], local: local || [] };
+  return {
+    client,
+    keywords: keywords || [],
+    ai: ai || [],
+    local: local || [],
+    insight,
+  };
 }
 
 function rankColor(position) {
@@ -29,7 +37,7 @@ function mentionColor(mentioned) {
 }
 
 export default async function ClientPage({ params }) {
-  const { client, keywords, ai, local } = await getClientData(params.slug);
+  const { client, keywords, ai, local, insight } = await getClientData(params.slug);
 
   if (!client) {
     return (
@@ -50,7 +58,13 @@ export default async function ClientPage({ params }) {
         ← All clients
       </Link>
       <h1 className="text-3xl font-extrabold mt-4">{client.clinic_name}</h1>
-      <p className="text-gray-400 mb-10">{client.owner_name}</p>
+      <p className="text-gray-400 mb-6">{client.owner_name}</p>
+
+      {insight?.blurb && (
+        <div className="bg-gold/5 border border-gold/20 rounded-xl px-5 py-4 mb-10 text-sm text-gray-200 leading-relaxed">
+          {insight.blurb}
+        </div>
+      )}
 
       {/* Keyword rankings */}
       <section className="mb-12">
@@ -143,6 +157,8 @@ export default async function ClientPage({ params }) {
           </div>
         )}
       </section>
+
+      <ClientChat slug={params.slug} />
     </main>
   );
 }

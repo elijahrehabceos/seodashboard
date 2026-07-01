@@ -56,6 +56,29 @@ is filled in. For each client, find their Google Place ID in Local Falcon
 (Locations tab, or via the API) and add it to `data/clients.json`, then
 commit and push. The next scheduled refresh will pick it up.
 
+### 5. Claude-powered insights (optional, but recommended)
+
+Two features run on Claude:
+
+- **Auto-summary blurb** — the daily refresh script writes a 2-3 sentence
+  takeaway per client into the `client_insights` table, shown at the top of
+  each client page.
+- **"Ask about this client"** — a chat box on each client page that answers
+  questions about that client's live data.
+
+To turn these on:
+
+1. Get an API key from https://console.anthropic.com/settings/keys
+2. Add it as a **GitHub Actions secret** named `ANTHROPIC_API_KEY` (for the
+   daily blurb generation)
+3. Add it as a **Vercel environment variable**, also named `ANTHROPIC_API_KEY`
+   (for the "Ask about this client" chat box — this one runs server-side only,
+   the key is never exposed to the browser)
+
+This is a pay-per-use API, unlike a claude.ai subscription — cost is a small
+fraction of a cent per blurb or question, but it is real usage-based billing,
+so keep an eye on it if you add heavier use later.
+
 ## Local development
 
 ```bash

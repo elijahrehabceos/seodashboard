@@ -57,6 +57,12 @@ create table if not exists refresh_log (
   details text
 );
 
+create table if not exists client_insights (
+  client_slug text primary key references clients(slug) on delete cascade,
+  blurb text,
+  generated_at timestamptz default now()
+);
+
 -- Row Level Security: allow public read (dashboard is read-only for the team),
 -- writes only happen via the service_role key from the GitHub Action.
 alter table clients enable row level security;
@@ -64,9 +70,11 @@ alter table keyword_rankings enable row level security;
 alter table ai_visibility enable row level security;
 alter table local_pack enable row level security;
 alter table refresh_log enable row level security;
+alter table client_insights enable row level security;
 
 create policy "public read clients" on clients for select using (true);
 create policy "public read keyword_rankings" on keyword_rankings for select using (true);
 create policy "public read ai_visibility" on ai_visibility for select using (true);
 create policy "public read local_pack" on local_pack for select using (true);
 create policy "public read refresh_log" on refresh_log for select using (true);
+create policy "public read client_insights" on client_insights for select using (true);

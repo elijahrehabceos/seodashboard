@@ -16,6 +16,7 @@ const SE_RANKING_KEY = process.env.SE_RANKING_API_KEY;
 const LOCAL_FALCON_KEY = process.env.LOCAL_FALCON_API_KEY;
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY; // optional — insights skipped if absent
 
 if (!SE_RANKING_KEY || !SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
   console.error("Missing required env vars. Check GitHub Actions secrets.");
@@ -229,6 +230,56 @@ async function upsertClientRecord(client) {
   if (error) throw error;
 }
 
+async function generateInsight(client) {
+  if (!ANTHROPIC_API_KEY) return; // feature not configured yet
+
+  const [{ data: keywords }, { data: ai }, { data: local }] = await Promise.all([
+    supabase.from("keyword_rankings").select("*").eq("client_slug", client.slug),
+    supabase.from("ai_visibility").select("*").eq("client_slug", client.slug),
+    supabase.from("local_pack").select("*").eq("client_slug", client.slug),
+  ]);
+
+  const prompt = `You are an SEO analyst writing a short internal note for an agency
+dashboard card. Clinic: ${client.clinic_name}.
+
+Keyword rankings: ${JSON.stringify(keywords)}
+AI visibility: ${JSON.stringify(ai)}
+Local pack: ${JSON.stringify(local)}
+
+Write 2-3 plain sentences (no markdown, no headers) summarizing what's going
+well and what needs attention. Be specific with numbers where useful. No
+em dashes. This is for internal agency use, not client-facing.`;
+
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 300,
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
+    const json = await res.json();
+    const blurb = json?.content?.find((b) => b.type === "text")?.text?.trim();
+    if (!blurb) return;
+
+    const { error } = await supabase
+      .from("client_insights")
+      .upsert(
+        { client_slug: client.slug, blurb, generated_at: new Date().toISOString() },
+        { onConflict: "client_slug" }
+      );
+    if (error) throw error;
+  } catch (err) {
+    console.error(`[insight fail] ${client.clinic_name}:`, err.message);
+  }
+}
+
 async function main() {
   let successCount = 0;
   let failCount = 0;
@@ -240,6 +291,7 @@ async function main() {
       const kwCount = await refreshKeywordRankings(client);
       const aiCount = await refreshAiVisibility(client);
       const lfCount = await refreshLocalPack(client);
+      await generateInsight(client);
       console.log(
         `[ok] ${client.clinic_name}: ${kwCount} keywords, ${aiCount} AI engines, ${lfCount} local pack rows`
       );
