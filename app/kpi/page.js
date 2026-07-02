@@ -85,27 +85,11 @@ export default async function KpiPage() {
           </div>
         </div>
 
-        <div className="rd-hi-card">
-          <div className="rd-hi-label green">
-            <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5"/><path d="M8 5v4M8 11v.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-            How we track wins
-          </div>
-          <p>
-            Every client&apos;s primary keyword is the actual first keyword
-            set up for them in SE Ranking, so this reflects real, established
-            local search terms, not a guess. A client counts as a Top 5 or
-            Top 10 win if that keyword hit that position <strong>at any point
-            this week</strong>, giving the team full credit for strong days
-            rather than getting docked for normal day-to-day ranking
-            fluctuation.
-          </p>
-        </div>
-
         <div className="rd-divider">· · ·</div>
 
         <table className="rd-rtable">
           <thead>
-            <tr><th>Clinic</th><th>Primary Keyword</th><th>Best This Week</th><th>Top 5?</th></tr>
+            <tr><th>Clinic</th><th>Primary Keyword</th><th>Best This Week</th></tr>
           </thead>
           <tbody>
             {rows.map((r) => (
@@ -121,7 +105,6 @@ export default async function KpiPage() {
                 <td className={r.inTop5 ? "p1" : "pw"}>
                   {r.effectivePosition && r.effectivePosition > 0 ? `#${r.effectivePosition}` : "—"}
                 </td>
-                <td className={r.inTop5 ? "p1" : "pnr"}>{r.inTop5 ? "Yes" : "No"}</td>
               </tr>
             ))}
           </tbody>

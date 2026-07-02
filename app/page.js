@@ -3,15 +3,23 @@ import { supabase } from "@/lib/supabase";
 
 export const revalidate = 3600;
 
+function suggestionFor(position) {
+  if (position > 20) {
+    return "Not yet ranking on page 1 or 2. Worth a fresh on-page pass and a look at whether the location page has enough unique, locally-relevant content.";
+  }
+  if (position > 10) {
+    return "Sitting on page 2. A few strong local backlinks or an updated GBP post cadence could help close the gap to page 1.";
+  }
+  return "On page 1 but outside the top 10. Tightening up on-page keyword targeting and internal links to this page should help it climb further.";
+}
+
 async function getSpotlights() {
   const { data: keywords } = await supabase
     .from("keyword_rankings")
     .select("client_slug, keyword, position, position_change")
-    .not("position_change", "is", null)
-    .order("position_change", { ascending: false })
-    .limit(50); // pull a batch, then split client-side into wins/drops
+    .not("position_change", "is", null);
 
-  if (!keywords || keywords.length === 0) return { wins: [], drops: [] };
+  if (!keywords || keywords.length === 0) return { wins: [], needsAttention: [] };
 
   const slugs = [...new Set(keywords.map((k) => k.client_slug))];
   const { data: clients } = await supabase
@@ -20,23 +28,28 @@ async function getSpotlights() {
     .in("slug", slugs);
   const nameBySlug = new Map((clients || []).map((c) => [c.slug, c.clinic_name]));
 
+  // Wins: real, believable movement only. A 20+ position jump in a single
+  // week is almost always a newly onboarded client's first real check-in,
+  // not an actual ranking win, so those are excluded.
   const wins = keywords
-    .filter((k) => k.position_change > 0)
+    .filter((k) => k.position_change > 0 && k.position_change < 20)
     .sort((a, b) => b.position_change - a.position_change)
     .slice(0, 4)
     .map((k) => ({ ...k, clinic_name: nameBySlug.get(k.client_slug) }));
 
-  const drops = keywords
-    .filter((k) => k.position_change < 0)
-    .sort((a, b) => a.position_change - b.position_change)
+  // Needs attention: not about drops — about who's currently ranking
+  // lowest, with a concrete next step for each.
+  const needsAttention = keywords
+    .filter((k) => k.position && k.position > 5)
+    .sort((a, b) => b.position - a.position)
     .slice(0, 4)
     .map((k) => ({ ...k, clinic_name: nameBySlug.get(k.client_slug) }));
 
-  return { wins, drops };
+  return { wins, needsAttention };
 }
 
 export default async function HomePage() {
-  const { wins, drops } = await getSpotlights();
+  const { wins, needsAttention } = await getSpotlights();
 
   return (
     <div className="rd-body">
@@ -115,26 +128,24 @@ export default async function HomePage() {
             <span className="rd-sh-num">02</span>
             <span className="rd-sh-title">Needs Attention</span>
           </div>
-          <span className="rd-sh-badge">This Week</span>
+          <span className="rd-sh-badge">Opportunity</span>
         </div>
 
-        {drops.length === 0 ? (
+        {needsAttention.length === 0 ? (
           <p style={{ color: "#999", fontSize: 13, marginBottom: 40 }}>
-            No significant drops this week.
+            Every tracked keyword is currently in a strong position.
           </p>
         ) : (
           <div style={{ display: "grid", gap: 12, marginBottom: 48 }}>
-            {drops.map((d, i) => (
+            {needsAttention.map((d, i) => (
               <div key={i} className="rd-hi-card" style={{ marginBottom: 0 }}>
                 <div className="rd-hi-label gold">
-                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 13V3M3 8l5 5 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5"/><path d="M8 5v4M8 11v.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
                   {d.clinic_name}
                 </div>
                 <p>
-                  Dropped <strong>{Math.abs(d.position_change)} positions</strong> for
-                  &ldquo;{d.keyword}&rdquo;, now at <strong>#{d.position}</strong>.
-                  Worth checking recent content changes, a competitor's new
-                  push, or refreshing the page's on-page SEO.
+                  Currently at <strong>#{d.position}</strong> for &ldquo;{d.keyword}&rdquo;.{" "}
+                  {suggestionFor(d.position)}
                 </p>
               </div>
             ))}
