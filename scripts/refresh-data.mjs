@@ -300,6 +300,7 @@ async function refreshLocalPack(client) {
     for (const r of latestByKeyword.values()) {
       rows.push({
         client_slug: client.slug,
+        place_id: placeId,
         keyword: r.keyword,
         location_label: r.location?.name || `${client.clinic_name} (${placeId.slice(-6)})`,
         arp: isFinite(Number(r.arp)) ? Number(r.arp) : null,
@@ -315,7 +316,7 @@ async function refreshLocalPack(client) {
     if (rows.length) {
       const { error } = await supabase
         .from("local_pack")
-        .upsert(rows, { onConflict: "client_slug,keyword,location_label" });
+        .upsert(rows, { onConflict: "client_slug,place_id,keyword" });
       if (error) throw error;
       totalRows += rows.length;
     }

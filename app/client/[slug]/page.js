@@ -257,33 +257,43 @@ export default async function ClientPage({ params }) {
 
           {local.length === 0 ? (
             <p style={{ color: "#999", fontSize: 13 }}>No Local Falcon data yet for this client.</p>
-          ) : (
-            local.map((l) => (
-              <div key={l.id} className="rd-lp-card">
-                <div className="rd-lp-hdr">
-                  <div className="rd-lp-city">
-                    <div className="rd-lp-city-name">{l.location_label}</div>
-                    <div className="rd-lp-city-sub">{l.keyword}</div>
+          ) : (() => {
+            // Local Falcon sometimes returns the identical business name for
+            // two genuinely different physical locations. Disambiguate by
+            // appending the differing keyword when labels collide.
+            const labelCounts = {};
+            for (const l of local) labelCounts[l.location_label] = (labelCounts[l.location_label] || 0) + 1;
+
+            return local.map((l) => {
+              const displayLabel =
+                labelCounts[l.location_label] > 1 ? `${l.location_label} — ${l.keyword}` : l.location_label;
+              return (
+                <div key={l.id} className="rd-lp-card">
+                  <div className="rd-lp-hdr">
+                    <div className="rd-lp-city">
+                      <div className="rd-lp-city-name">{displayLabel}</div>
+                      <div className="rd-lp-city-sub">{l.keyword}</div>
+                    </div>
+                    <div className="rd-lp-stat">
+                      <div className="rd-lp-stat-lbl">Avg. Rank (ARP)</div>
+                      <div className={`rd-lp-stat-val ${l.arp && l.arp <= 3 ? "good" : "opp"}`}>{l.arp ?? "—"}</div>
+                    </div>
                   </div>
-                  <div className="rd-lp-stat">
-                    <div className="rd-lp-stat-lbl">Avg. Rank (ARP)</div>
-                    <div className={`rd-lp-stat-val ${l.arp && l.arp <= 3 ? "good" : "opp"}`}>{l.arp ?? "—"}</div>
+                  <div className="rd-map-wrap">
+                    {l.heatmap_url ? (
+                      <img className="rd-lp-heatmap" src={l.heatmap_url} alt={`Local Falcon heatmap — ${displayLabel}`} />
+                    ) : (
+                      <div className="rd-lp-heatmap-missing">Heatmap not available yet for this location.</div>
+                    )}
+                  </div>
+                  <div className="rd-lp-foot">
+                    <div className="rd-lp-kw">SoLV: <span>{l.solv != null ? `${l.solv}%` : "—"}</span></div>
+                    <div className="rd-lp-kw">ATRP: <span>{l.atrp ?? "—"}</span></div>
                   </div>
                 </div>
-                <div className="rd-map-wrap">
-                  {l.heatmap_url ? (
-                    <img className="rd-lp-heatmap" src={l.heatmap_url} alt={`Local Falcon heatmap — ${l.location_label}`} />
-                  ) : (
-                    <div className="rd-lp-heatmap-missing">Heatmap not available yet for this location.</div>
-                  )}
-                </div>
-                <div className="rd-lp-foot">
-                  <div className="rd-lp-kw">SoLV: <span>{l.solv != null ? `${l.solv}%` : "—"}</span></div>
-                  <div className="rd-lp-kw">ATRP: <span>{l.atrp ?? "—"}</span></div>
-                </div>
-              </div>
-            ))
-          )}
+              );
+            });
+          })()}
 
           <div className="rd-report-footer"><div className="rd-ft-brand">Powered by <span>Rehab CEOs</span></div></div>
 

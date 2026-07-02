@@ -50,6 +50,7 @@ create table if not exists ai_visibility (
 create table if not exists local_pack (
   id bigserial primary key,
   client_slug text references clients(slug) on delete cascade,
+  place_id text,            -- the actual Google Place ID — guarantees uniqueness even when Local Falcon returns duplicate names
   keyword text,
   location_label text,     -- e.g. city/market name for multi-location clients
   arp numeric,
@@ -59,7 +60,7 @@ create table if not exists local_pack (
   report_key text,
   scan_date date,
   updated_at timestamptz default now(),
-  unique (client_slug, keyword, location_label)
+  unique (client_slug, place_id, keyword)
 );
 
 create table if not exists refresh_log (
