@@ -8,6 +8,15 @@ export const revalidate = 3600;
 // matches this pattern for a given client.
 const PRIMARY_PATTERN = /.+\bin\b.+/i;
 
+// Clients temporarily excluded from the KPI count (per team decision —
+// not yet ready to be measured, onboarding, etc.)
+const EXCLUDED_OWNERS = new Set([
+  "Amy Robinson",
+  "Darin Deaton | Trey Taylor",
+  "Michael Chua",
+  "Avi Singh",
+]);
+
 async function getKpiData() {
   const [{ data: clients }, { data: keywords }] = await Promise.all([
     supabase.from("clients").select("slug, clinic_name, owner_name").order("clinic_name"),
@@ -20,7 +29,9 @@ async function getKpiData() {
     byClient.get(k.client_slug).push(k);
   }
 
-  const rows = (clients || []).map((c) => {
+  const rows = (clients || [])
+    .filter((c) => !EXCLUDED_OWNERS.has(c.owner_name))
+    .map((c) => {
     const clientKeywords = byClient.get(c.slug) || [];
     const primary =
       clientKeywords.find((k) => PRIMARY_PATTERN.test(k.keyword)) || clientKeywords[0] || null;

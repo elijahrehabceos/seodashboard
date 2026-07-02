@@ -63,7 +63,10 @@ export default async function ClientPage({ params }) {
     );
   }
 
-  const bestPosition = keywords
+  const regionByEngine = new Map(engines.map((e) => [e.site_engine_id, e.region_name]));
+  const mappedKeywords = keywords.filter((k) => regionByEngine.get(k.site_engine_id));
+
+  const bestPosition = mappedKeywords
     .filter((k) => k.position && k.position > 0)
     .sort((a, b) => a.position - b.position)[0];
 
@@ -103,7 +106,7 @@ export default async function ClientPage({ params }) {
             </div>
             <div className="rd-kpi">
               <div className="rd-kpi-lbl">Tracked Keywords</div>
-              <div className="rd-kpi-val">{keywords.length}</div>
+              <div className="rd-kpi-val">{mappedKeywords.length}</div>
               <div className="rd-kpi-sub">Across all tracked markets</div>
             </div>
             <div className="rd-kpi">
@@ -140,15 +143,24 @@ export default async function ClientPage({ params }) {
             <p style={{ color: "#999", fontSize: 13 }}>No ranking data yet.</p>
           ) : (() => {
             const regionByEngine = new Map(engines.map((e) => [e.site_engine_id, e.region_name]));
-            const distinctEngines = [...new Set(keywords.map((k) => k.site_engine_id))];
+            // Only keep engines that map to a real tracked location. Legacy
+            // or misconfigured search-engine entries (no region name from
+            // SE Ranking) are dropped entirely rather than shown as a vague
+            // "other" bucket.
+            const mappedKeywords = keywords.filter((k) => regionByEngine.get(k.site_engine_id));
+            const distinctEngines = [...new Set(mappedKeywords.map((k) => k.site_engine_id))];
             const isMultiLocation = distinctEngines.length > 1;
+
+            if (mappedKeywords.length === 0) {
+              return <p style={{ color: "#999", fontSize: 13 }}>No ranking data yet.</p>;
+            }
 
             if (!isMultiLocation) {
               return (
                 <table className="rd-rtable">
                   <thead><tr><th>Keyword</th><th>Position</th><th>Trend</th></tr></thead>
                   <tbody>
-                    {keywords.map((k) => (
+                    {mappedKeywords.map((k) => (
                       <tr key={k.id}>
                         <td>{k.keyword}</td>
                         <td className={posClass(k.position)}>{k.position && k.position > 0 ? k.position : "NR"}</td>
@@ -161,8 +173,8 @@ export default async function ClientPage({ params }) {
             }
 
             return distinctEngines.map((engineId) => {
-              const groupKeywords = keywords.filter((k) => k.site_engine_id === engineId);
-              const label = regionByEngine.get(engineId) || "Other Tracked Market";
+              const groupKeywords = mappedKeywords.filter((k) => k.site_engine_id === engineId);
+              const label = regionByEngine.get(engineId);
               const bestInGroup = groupKeywords
                 .filter((k) => k.position && k.position > 0)
                 .sort((a, b) => a.position - b.position)[0];
