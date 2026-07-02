@@ -202,7 +202,7 @@ async function refreshLocalPack(client) {
         arp: isFinite(Number(r.arp)) ? Number(r.arp) : null,
         atrp: isFinite(Number(r.atrp)) ? Number(r.atrp) : null,
         solv: isFinite(Number(r.solv)) ? Number(r.solv) : null,
-        heatmap_url: r.heatmap || r.image || null,
+        heatmap_url: r.image || r.heatmap || null,
         report_key: r.report_key,
         scan_date: r.date ? new Date(r.date).toISOString().slice(0, 10) : null,
         updated_at: new Date().toISOString(),
