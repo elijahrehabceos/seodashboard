@@ -79,23 +79,25 @@ export default async function KpiPage() {
             <div className="rd-kpi-sub">{pct10}% team rate this week</div>
           </div>
           <div className="rd-kpi">
-            <div className="rd-kpi-lbl">Top 5 Rate</div>
-            <div className={`rd-kpi-val ${isGood5 ? "g" : "gold"}`}>{pct5}%</div>
+            <div className="rd-kpi-lbl">Top 10 Rate</div>
+            <div className={`rd-kpi-val ${isGood10 ? "g" : "gold"}`}>{pct10}%</div>
             <div className="rd-kpi-sub">Across all clients</div>
           </div>
         </div>
 
         <div className="rd-hi-card">
-          <div className="rd-hi-label gold">
+          <div className="rd-hi-label green">
             <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5"/><path d="M8 5v4M8 11v.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-            How this is calculated
+            How we track wins
           </div>
           <p>
-            The primary keyword is the literal first keyword added to each
-            client&apos;s SE Ranking project, not a text pattern guess. A
-            client counts toward Top 5 or Top 10 if that keyword hit that
-            position <strong>at any point during the current week</strong>,
-            not just on today&apos;s check.
+            Every client&apos;s primary keyword is the actual first keyword
+            set up for them in SE Ranking, so this reflects real, established
+            local search terms, not a guess. A client counts as a Top 5 or
+            Top 10 win if that keyword hit that position <strong>at any point
+            this week</strong>, giving the team full credit for strong days
+            rather than getting docked for normal day-to-day ranking
+            fluctuation.
           </p>
         </div>
 
