@@ -162,7 +162,7 @@ export default async function ClientPage({ params }) {
 
             return distinctEngines.map((engineId) => {
               const groupKeywords = keywords.filter((k) => k.site_engine_id === engineId);
-              const label = regionByEngine.get(engineId) || `Location ${engineId}`;
+              const label = regionByEngine.get(engineId) || "Other Tracked Market";
               const bestInGroup = groupKeywords
                 .filter((k) => k.position && k.position > 0)
                 .sort((a, b) => a.position - b.position)[0];

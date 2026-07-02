@@ -90,34 +90,29 @@ async function refreshKeywordRankings(client) {
 
   const weekStart = mondayOfCurrentWeek();
 
-  // Pull existing rows once so we can compute "best position seen this week"
-  // without a per-keyword round trip.
-  const { data: existingRows } = await supabase
-    .from("keyword_rankings")
-    .select("keyword,site_engine_id,best_position_week,week_start")
-    .eq("client_slug", client.slug);
-  const existingMap = new Map(
-    (existingRows || []).map((r) => [`${r.keyword}::${r.site_engine_id}`, r])
-  );
-
   const rows = [];
   for (const engineBlock of positions) {
     const siteEngineId = engineBlock.site_engine_id;
     for (const kw of engineBlock.keywords || []) {
-      const latest = (kw.positions || []).slice(-1)[0];
+      const historyThisRun = kw.positions || [];
+      const latest = historyThisRun.slice(-1)[0];
       if (!latest) continue;
       const keywordName = keywordNameById.get(String(kw.id)) || `keyword_${kw.id}`;
       const currentPos = latest.pos ?? null;
 
-      const existing = existingMap.get(`${keywordName}::${siteEngineId}`);
-      let bestPositionWeek = currentPos;
-      if (currentPos && currentPos > 0) {
-        if (existing && existing.week_start === weekStart && existing.best_position_week) {
-          bestPositionWeek = Math.min(existing.best_position_week, currentPos);
-        }
-      } else if (existing && existing.week_start === weekStart) {
-        bestPositionWeek = existing.best_position_week; // keep prior best if today is unranked
-      }
+      // Compute "best position this week" straight from SE Ranking's own
+      // historical entries (the API already returns up to 7 days per call,
+      // which safely covers Monday-to-today since a week is only 7 days).
+      // This is recomputed fresh every run rather than trusted from a
+      // previous run's stored value, so it can't drift if a day is missed.
+      const thisWeeksEntries = historyThisRun.filter(
+        (p) => p.date >= weekStart && p.pos && p.pos > 0
+      );
+      const bestPositionWeek = thisWeeksEntries.length
+        ? Math.min(...thisWeeksEntries.map((p) => p.pos))
+        : currentPos && currentPos > 0
+        ? currentPos
+        : null;
 
       rows.push({
         client_slug: client.slug,
@@ -234,10 +229,16 @@ async function refreshLocalPack(client) {
   let totalRows = 0;
 
   for (const placeId of placeIds) {
-    const list = await lfPost("/v1/reports/", {
-      place_id: placeId,
-      limit: "20",
-    });
+    let list;
+    try {
+      list = await lfPost("/v1/reports/", {
+        place_id: placeId,
+        limit: "20",
+      });
+    } catch (err) {
+      console.error(`[local pack skip] ${client.clinic_name} (${placeId}):`, err.message);
+      continue; // this location has no data yet or failed — don't let it block the others
+    }
 
     const reports = list?.data?.reports || [];
     if (!reports.length) continue;
