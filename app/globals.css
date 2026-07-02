@@ -45,21 +45,21 @@ body {
   inset:0;
   pointer-events:none;
   z-index:1;
-  padding:2px;
+  padding:1.5px;
   background:conic-gradient(from 0deg,
-    transparent 0deg, transparent 270deg,
-    rgba(205,161,88,0) 270deg,
-    #cda158 320deg,
-    #fdeac2 345deg,
-    #cda158 358deg,
-    transparent 360deg);
+    transparent 0deg, transparent 335deg,
+    rgba(205,161,88,0) 335deg,
+    #cda158 350deg,
+    #fff6e0 358deg,
+    #cda158 360deg);
   -webkit-mask:linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite:xor;
   mask:linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   mask-composite:exclude;
+  filter:drop-shadow(0 0 4px rgba(253,234,194,.9));
 }
 @media (prefers-reduced-motion: no-preference) {
-  .rd-cover-orbit { animation: orbit-spin 3.6s linear infinite; }
+  .rd-cover-orbit { animation: orbit-spin 2.4s linear infinite; }
 }
 @keyframes orbit-spin{ to { transform: rotate(360deg); } }
 .rd-cover-brand,.rd-cover-eyebrow,.rd-cover-title,.rd-cover-domain,.rd-cover-badges{position:relative;z-index:2}
