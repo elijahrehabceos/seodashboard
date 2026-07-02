@@ -24,20 +24,30 @@ async function getKpiData() {
     const clientKeywords = byClient.get(c.slug) || [];
     const primary =
       clientKeywords.find((k) => PRIMARY_PATTERN.test(k.keyword)) || clientKeywords[0] || null;
-    const inTop5 = !!(primary && primary.position && primary.position > 0 && primary.position <= 5);
-    return { ...c, primary, inTop5 };
+
+    // Use the best position seen so far THIS WEEK, not just today's snapshot.
+    // Falls back to current position if weekly tracking hasn't kicked in yet.
+    const effectivePosition = primary
+      ? primary.best_position_week ?? primary.position
+      : null;
+
+    const inTop5 = !!(effectivePosition && effectivePosition > 0 && effectivePosition <= 5);
+    const inTop10 = !!(effectivePosition && effectivePosition > 0 && effectivePosition <= 10);
+    return { ...c, primary, effectivePosition, inTop5, inTop10 };
   });
 
-  const tracked = rows.filter((r) => r.primary);
   const top5Count = rows.filter((r) => r.inTop5).length;
+  const top10Count = rows.filter((r) => r.inTop10).length;
 
-  return { rows, top5Count, trackedCount: tracked.length, totalCount: rows.length };
+  return { rows, top5Count, top10Count, totalCount: rows.length };
 }
 
 export default async function KpiPage() {
-  const { rows, top5Count, trackedCount, totalCount } = await getKpiData();
-  const pct = totalCount ? Math.round((top5Count / totalCount) * 100) : 0;
-  const isGood = pct >= 50;
+  const { rows, top5Count, top10Count, totalCount } = await getKpiData();
+  const pct5 = totalCount ? Math.round((top5Count / totalCount) * 100) : 0;
+  const pct10 = totalCount ? Math.round((top10Count / totalCount) * 100) : 0;
+  const isGood5 = pct5 >= 50;
+  const isGood10 = pct10 >= 50;
 
   return (
     <div className="rd-body">
@@ -46,14 +56,14 @@ export default async function KpiPage() {
         <div className="rd-cover-brand"><div className="rd-brand-line"></div><div className="rd-brand-text">Rehab CEOs</div><div className="rd-brand-line r"></div></div>
         <div className="rd-cover-eyebrow">Team Performance</div>
         <div className="rd-cover-title">SEO Team KPI</div>
-        <div className="rd-cover-domain">Top 5 rankings on primary local keyword</div>
+        <div className="rd-cover-domain">Top 5 &amp; Top 10 on primary local keyword</div>
       </div>
 
       <div className="rd-page" style={{ maxWidth: 900 }}>
         <div className="rd-sh">
           <div className="rd-sh-left">
             <span className="rd-sh-num">KPI</span>
-            <span className="rd-sh-title">Top 5 Coverage</span>
+            <span className="rd-sh-title">Weekly Coverage</span>
           </div>
           <span className="rd-sh-badge">Live</span>
         </div>
@@ -61,18 +71,18 @@ export default async function KpiPage() {
         <div className="rd-kpi-grid">
           <div className="rd-kpi">
             <div className="rd-kpi-lbl">Clients Ranking Top 5</div>
-            <div className={`rd-kpi-val ${isGood ? "g" : "gold"}`}>{top5Count} / {totalCount}</div>
-            <div className="rd-kpi-sub">On their primary local keyword</div>
+            <div className={`rd-kpi-val ${isGood5 ? "g" : "gold"}`}>{top5Count} / {totalCount}</div>
+            <div className="rd-kpi-sub">{pct5}% team rate this week</div>
           </div>
           <div className="rd-kpi">
-            <div className="rd-kpi-lbl">Team Top 5 Rate</div>
-            <div className={`rd-kpi-val ${isGood ? "g" : "gold"}`}>{pct}%</div>
+            <div className="rd-kpi-lbl">Clients Ranking Top 10</div>
+            <div className={`rd-kpi-val ${isGood10 ? "g" : "gold"}`}>{top10Count} / {totalCount}</div>
+            <div className="rd-kpi-sub">{pct10}% team rate this week</div>
+          </div>
+          <div className="rd-kpi">
+            <div className="rd-kpi-lbl">Top 5 Rate</div>
+            <div className={`rd-kpi-val ${isGood5 ? "g" : "gold"}`}>{pct5}%</div>
             <div className="rd-kpi-sub">Across all clients</div>
-          </div>
-          <div className="rd-kpi">
-            <div className="rd-kpi-lbl">Primary Keyword Found</div>
-            <div className="rd-kpi-val">{trackedCount} / {totalCount}</div>
-            <div className="rd-kpi-sub">Clients with detectable pattern</div>
           </div>
         </div>
 
@@ -84,10 +94,10 @@ export default async function KpiPage() {
           <p>
             For each client, the primary keyword is detected by matching the
             &ldquo;service in location&rdquo; pattern (e.g. &ldquo;physical
-            therapy in pasadena ca&rdquo;). If no keyword matches that
-            pattern, the earliest-tracked keyword is used instead. A client
-            counts toward the KPI if that keyword is currently ranking
-            position 1 through 5.
+            therapy in pasadena ca&rdquo;). A client counts toward Top 5 or
+            Top 10 if that keyword hit that position <strong>at any point
+            during the current week</strong>, not just on today&apos;s check,
+            since daily rankings can bounce around.
           </p>
         </div>
 
@@ -95,13 +105,13 @@ export default async function KpiPage() {
 
         <table className="rd-rtable">
           <thead>
-            <tr><th>Clinic</th><th>Primary Keyword</th><th>Position</th><th>Top 5?</th></tr>
+            <tr><th>Clinic</th><th>Primary Keyword</th><th>Best This Week</th><th>Top 5?</th></tr>
           </thead>
           <tbody>
             {rows.map((r) => (
               <tr key={r.slug}>
                 <td>
-                  <Link href={`/client/${r.slug}`} style={{ color: "#111", textDecoration: "none" }}>
+                  <Link href={`/client/${r.slug}`} className="rd-kpi-link">
                     {r.clinic_name}
                   </Link>
                 </td>
@@ -109,7 +119,7 @@ export default async function KpiPage() {
                   {r.primary ? r.primary.keyword : "No keyword data yet"}
                 </td>
                 <td className={r.inTop5 ? "p1" : "pw"}>
-                  {r.primary && r.primary.position > 0 ? `#${r.primary.position}` : "—"}
+                  {r.effectivePosition && r.effectivePosition > 0 ? `#${r.effectivePosition}` : "—"}
                 </td>
                 <td className={r.inTop5 ? "p1" : "pnr"}>{r.inTop5 ? "Yes" : "No"}</td>
               </tr>

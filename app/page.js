@@ -1,6 +1,43 @@
 import Link from "next/link";
+import { supabase } from "@/lib/supabase";
 
-export default function HomePage() {
+export const revalidate = 3600;
+
+async function getSpotlights() {
+  const { data: keywords } = await supabase
+    .from("keyword_rankings")
+    .select("client_slug, keyword, position, position_change")
+    .not("position_change", "is", null)
+    .order("position_change", { ascending: false })
+    .limit(50); // pull a batch, then split client-side into wins/drops
+
+  if (!keywords || keywords.length === 0) return { wins: [], drops: [] };
+
+  const slugs = [...new Set(keywords.map((k) => k.client_slug))];
+  const { data: clients } = await supabase
+    .from("clients")
+    .select("slug, clinic_name")
+    .in("slug", slugs);
+  const nameBySlug = new Map((clients || []).map((c) => [c.slug, c.clinic_name]));
+
+  const wins = keywords
+    .filter((k) => k.position_change > 0)
+    .sort((a, b) => b.position_change - a.position_change)
+    .slice(0, 4)
+    .map((k) => ({ ...k, clinic_name: nameBySlug.get(k.client_slug) }));
+
+  const drops = keywords
+    .filter((k) => k.position_change < 0)
+    .sort((a, b) => a.position_change - b.position_change)
+    .slice(0, 4)
+    .map((k) => ({ ...k, clinic_name: nameBySlug.get(k.client_slug) }));
+
+  return { wins, drops };
+}
+
+export default async function HomePage() {
+  const { wins, drops } = await getSpotlights();
+
   return (
     <div className="rd-body">
       <div className="rd-cover">
@@ -40,6 +77,69 @@ export default function HomePage() {
             </div>
           </Link>
         </div>
+
+        <div className="rd-divider">· · ·</div>
+
+        <div className="rd-sh">
+          <div className="rd-sh-left">
+            <span className="rd-sh-num">01</span>
+            <span className="rd-sh-title">Weekly Wins</span>
+          </div>
+          <span className="rd-sh-badge">This Week</span>
+        </div>
+
+        {wins.length === 0 ? (
+          <p style={{ color: "#999", fontSize: 13, marginBottom: 40 }}>
+            No ranking movement recorded yet.
+          </p>
+        ) : (
+          <div style={{ display: "grid", gap: 12, marginBottom: 48 }}>
+            {wins.map((w, i) => (
+              <div key={i} className="rd-hi-card" style={{ marginBottom: 0 }}>
+                <div className="rd-hi-label green">
+                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8l5-5 5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  {w.clinic_name}
+                </div>
+                <p>
+                  Climbed <strong>{w.position_change} positions</strong> for
+                  &ldquo;{w.keyword}&rdquo;, now sitting at{" "}
+                  <strong>#{w.position}</strong>.
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="rd-sh">
+          <div className="rd-sh-left">
+            <span className="rd-sh-num">02</span>
+            <span className="rd-sh-title">Needs Attention</span>
+          </div>
+          <span className="rd-sh-badge">This Week</span>
+        </div>
+
+        {drops.length === 0 ? (
+          <p style={{ color: "#999", fontSize: 13, marginBottom: 40 }}>
+            No significant drops this week.
+          </p>
+        ) : (
+          <div style={{ display: "grid", gap: 12, marginBottom: 48 }}>
+            {drops.map((d, i) => (
+              <div key={i} className="rd-hi-card" style={{ marginBottom: 0 }}>
+                <div className="rd-hi-label gold">
+                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 13V3M3 8l5 5 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  {d.clinic_name}
+                </div>
+                <p>
+                  Dropped <strong>{Math.abs(d.position_change)} positions</strong> for
+                  &ldquo;{d.keyword}&rdquo;, now at <strong>#{d.position}</strong>.
+                  Worth checking recent content changes, a competitor's new
+                  push, or refreshing the page's on-page SEO.
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
 
         <div className="rd-report-footer">
           <div className="rd-ft-brand">Powered by <span>Rehab CEOs</span></div>

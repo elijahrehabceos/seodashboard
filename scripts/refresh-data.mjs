@@ -38,6 +38,14 @@ function daysAgoISO(n) {
   return d.toISOString().slice(0, 10);
 }
 
+function mondayOfCurrentWeek() {
+  const d = new Date();
+  const day = d.getUTCDay(); // 0=Sun..6=Sat
+  const diff = (day === 0 ? -6 : 1) - day;
+  d.setUTCDate(d.getUTCDate() + diff);
+  return d.toISOString().slice(0, 10);
+}
+
 async function seGet(path, params = {}) {
   const url = new URL(`${SE_BASE}${path}`);
   Object.entries(params).forEach(([k, v]) => {
@@ -80,19 +88,46 @@ async function refreshKeywordRankings(client) {
   const keywordsList = await seGet("/keywords", { site_id: client.site_id });
   const keywordNameById = new Map(keywordsList.map((k) => [String(k.id), k.name]));
 
+  const weekStart = mondayOfCurrentWeek();
+
+  // Pull existing rows once so we can compute "best position seen this week"
+  // without a per-keyword round trip.
+  const { data: existingRows } = await supabase
+    .from("keyword_rankings")
+    .select("keyword,site_engine_id,best_position_week,week_start")
+    .eq("client_slug", client.slug);
+  const existingMap = new Map(
+    (existingRows || []).map((r) => [`${r.keyword}::${r.site_engine_id}`, r])
+  );
+
   const rows = [];
   for (const engineBlock of positions) {
     const siteEngineId = engineBlock.site_engine_id;
     for (const kw of engineBlock.keywords || []) {
       const latest = (kw.positions || []).slice(-1)[0];
       if (!latest) continue;
+      const keywordName = keywordNameById.get(String(kw.id)) || `keyword_${kw.id}`;
+      const currentPos = latest.pos ?? null;
+
+      const existing = existingMap.get(`${keywordName}::${siteEngineId}`);
+      let bestPositionWeek = currentPos;
+      if (currentPos && currentPos > 0) {
+        if (existing && existing.week_start === weekStart && existing.best_position_week) {
+          bestPositionWeek = Math.min(existing.best_position_week, currentPos);
+        }
+      } else if (existing && existing.week_start === weekStart) {
+        bestPositionWeek = existing.best_position_week; // keep prior best if today is unranked
+      }
+
       rows.push({
         client_slug: client.slug,
-        keyword: keywordNameById.get(String(kw.id)) || `keyword_${kw.id}`,
-        position: latest.pos ?? null,
+        keyword: keywordName,
+        position: currentPos,
         position_change: latest.change ?? null,
         site_engine_id: siteEngineId,
         checked_date: latest.date,
+        best_position_week: bestPositionWeek,
+        week_start: weekStart,
         updated_at: new Date().toISOString(),
       });
     }
@@ -104,6 +139,29 @@ async function refreshKeywordRankings(client) {
       .upsert(rows, { onConflict: "client_slug,keyword,site_engine_id" });
     if (error) throw error;
   }
+  return rows.length;
+}
+
+async function refreshSearchEngines(client) {
+  let engines;
+  try {
+    engines = await seGet("/sites/search-engines", { site_id: client.site_id });
+  } catch (e) {
+    return 0;
+  }
+  if (!Array.isArray(engines) || engines.length === 0) return 0;
+
+  const rows = engines.map((e) => ({
+    client_slug: client.slug,
+    site_engine_id: e.site_engine_id,
+    region_name: e.region_name || null,
+    updated_at: new Date().toISOString(),
+  }));
+
+  const { error } = await supabase
+    .from("search_engines")
+    .upsert(rows, { onConflict: "client_slug,site_engine_id" });
+  if (error) throw error;
   return rows.length;
 }
 
@@ -297,6 +355,7 @@ async function main() {
   for (const client of clients) {
     try {
       await upsertClientRecord(client);
+      await refreshSearchEngines(client);
       const kwCount = await refreshKeywordRankings(client);
       const aiCount = await refreshAiVisibility(client);
       const lfCount = await refreshLocalPack(client);

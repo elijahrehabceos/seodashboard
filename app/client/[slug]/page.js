@@ -5,7 +5,7 @@ import ClientChat from "./ClientChat";
 export const revalidate = 3600;
 
 async function getClientData(slug) {
-  const [{ data: client }, { data: keywords }, { data: ai }, { data: local }, { data: insight }] =
+  const [{ data: client }, { data: keywords }, { data: ai }, { data: local }, { data: insight }, { data: engines }] =
     await Promise.all([
       supabase.from("clients").select("*").eq("slug", slug).single(),
       supabase
@@ -16,6 +16,7 @@ async function getClientData(slug) {
       supabase.from("ai_visibility").select("*").eq("client_slug", slug),
       supabase.from("local_pack").select("*").eq("client_slug", slug),
       supabase.from("client_insights").select("*").eq("client_slug", slug).maybeSingle(),
+      supabase.from("search_engines").select("*").eq("client_slug", slug),
     ]);
 
   return {
@@ -24,6 +25,7 @@ async function getClientData(slug) {
     ai: ai || [],
     local: local || [],
     insight,
+    engines: engines || [],
   };
 }
 
@@ -46,7 +48,7 @@ function trendLabel(change) {
 }
 
 export default async function ClientPage({ params }) {
-  const { client, keywords, ai, local, insight } = await getClientData(params.slug);
+  const { client, keywords, ai, local, insight, engines } = await getClientData(params.slug);
 
   if (!client) {
     return (
@@ -136,20 +138,59 @@ export default async function ClientPage({ params }) {
           <div className="rd-sh"><div className="rd-sh-left"><span className="rd-sh-num">02</span><span className="rd-sh-title">Keyword Rankings</span></div><span className="rd-sh-badge">Daily Tracking</span></div>
           {keywords.length === 0 ? (
             <p style={{ color: "#999", fontSize: 13 }}>No ranking data yet.</p>
-          ) : (
-            <table className="rd-rtable">
-              <thead><tr><th>Keyword</th><th>Position</th><th>Trend</th></tr></thead>
-              <tbody>
-                {keywords.map((k) => (
-                  <tr key={k.id}>
-                    <td>{k.keyword}</td>
-                    <td className={posClass(k.position)}>{k.position && k.position > 0 ? k.position : "NR"}</td>
-                    <td className={trendClass(k.position_change)}>{trendLabel(k.position_change)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+          ) : (() => {
+            const regionByEngine = new Map(engines.map((e) => [e.site_engine_id, e.region_name]));
+            const distinctEngines = [...new Set(keywords.map((k) => k.site_engine_id))];
+            const isMultiLocation = distinctEngines.length > 1;
+
+            if (!isMultiLocation) {
+              return (
+                <table className="rd-rtable">
+                  <thead><tr><th>Keyword</th><th>Position</th><th>Trend</th></tr></thead>
+                  <tbody>
+                    {keywords.map((k) => (
+                      <tr key={k.id}>
+                        <td>{k.keyword}</td>
+                        <td className={posClass(k.position)}>{k.position && k.position > 0 ? k.position : "NR"}</td>
+                        <td className={trendClass(k.position_change)}>{trendLabel(k.position_change)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              );
+            }
+
+            return distinctEngines.map((engineId) => {
+              const groupKeywords = keywords.filter((k) => k.site_engine_id === engineId);
+              const label = regionByEngine.get(engineId) || `Location ${engineId}`;
+              const bestInGroup = groupKeywords
+                .filter((k) => k.position && k.position > 0)
+                .sort((a, b) => a.position - b.position)[0];
+
+              return (
+                <div key={engineId} className="rd-market-block" style={{ marginBottom: 32 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                    <span style={{ fontSize: 20, fontWeight: 900, color: "#000", letterSpacing: "-.02em" }}>{label}</span>
+                    {bestInGroup && bestInGroup.position <= 3 && (
+                      <span style={{ fontSize: 10, letterSpacing: ".1em", fontWeight: 700, border: "1.5px solid #16a34a", color: "#16a34a", borderRadius: 20, padding: "5px 14px" }}>Top 3</span>
+                    )}
+                  </div>
+                  <table className="rd-rtable">
+                    <thead><tr><th>Keyword</th><th>Position</th><th>Trend</th></tr></thead>
+                    <tbody>
+                      {groupKeywords.map((k) => (
+                        <tr key={k.id}>
+                          <td>{k.keyword}</td>
+                          <td className={posClass(k.position)}>{k.position && k.position > 0 ? k.position : "NR"}</td>
+                          <td className={trendClass(k.position_change)}>{trendLabel(k.position_change)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              );
+            });
+          })()}
 
           <div className="rd-divider">· · ·</div>
 
