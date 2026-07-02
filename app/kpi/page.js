@@ -92,8 +92,8 @@ export default async function KpiPage() {
             <tr><th>Clinic</th><th>Primary Keyword</th><th>Best This Week</th></tr>
           </thead>
           <tbody>
-            {rows.map((r) => (
-              <tr key={r.slug}>
+            {rows.map((r, i) => (
+              <tr key={r.slug} className="animate-fade-up" style={{ animationDelay: `${Math.min(i * 0.02, 0.5)}s` }}>
                 <td>
                   <Link href={`/client/${r.slug}`} className="rd-kpi-link">
                     {r.clinic_name}

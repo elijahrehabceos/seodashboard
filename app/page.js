@@ -71,7 +71,7 @@ export default async function HomePage() {
         </div>
 
         <div className="rd-menu-grid">
-          <Link href="/clients" className="rd-menu-card">
+          <Link href="/clients" className="rd-menu-card animate-fade-up" style={{ animationDelay: "0.05s" }}>
             <div className="rd-menu-card-eyebrow">55 Clients</div>
             <div className="rd-menu-card-title">Client Directory</div>
             <div className="rd-menu-card-desc">
@@ -81,7 +81,7 @@ export default async function HomePage() {
             </div>
           </Link>
 
-          <Link href="/kpi" className="rd-menu-card">
+          <Link href="/kpi" className="rd-menu-card animate-fade-up" style={{ animationDelay: "0.15s" }}>
             <div className="rd-menu-card-eyebrow">Team Performance</div>
             <div className="rd-menu-card-title">SEO Team KPI</div>
             <div className="rd-menu-card-desc">
@@ -108,7 +108,7 @@ export default async function HomePage() {
         ) : (
           <div style={{ display: "grid", gap: 12, marginBottom: 48 }}>
             {wins.map((w, i) => (
-              <div key={i} className="rd-hi-card" style={{ marginBottom: 0 }}>
+              <div key={i} className="rd-hi-card animate-fade-up" style={{ marginBottom: 0, animationDelay: `${0.05 * i}s` }}>
                 <div className="rd-hi-label green">
                   <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8l5-5 5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   {w.clinic_name}
@@ -138,7 +138,7 @@ export default async function HomePage() {
         ) : (
           <div style={{ display: "grid", gap: 12, marginBottom: 48 }}>
             {needsAttention.map((d, i) => (
-              <div key={i} className="rd-hi-card" style={{ marginBottom: 0 }}>
+              <div key={i} className="rd-hi-card animate-fade-up" style={{ marginBottom: 0, animationDelay: `${0.05 * i}s` }}>
                 <div className="rd-hi-label gold">
                   <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5"/><path d="M8 5v4M8 11v.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
                   {d.clinic_name}

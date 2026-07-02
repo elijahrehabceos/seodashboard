@@ -52,7 +52,7 @@ export default function ClientsList({ clients }) {
           </p>
         ) : (
           <div style={{ borderTop: "1px solid #e0e0e0" }}>
-            {filtered.map((c) => (
+            {filtered.map((c, i) => (
               <Link
                 key={c.slug}
                 href={`/client/${c.slug}`}
@@ -63,8 +63,9 @@ export default function ClientsList({ clients }) {
                   padding: "22px 4px",
                   textDecoration: "none",
                   borderBottom: "1px solid #e0e0e0",
+                  animationDelay: `${Math.min(i * 0.025, 0.6)}s`,
                 }}
-                className="rd-directory-row"
+                className="rd-directory-row animate-fade-up"
               >
                 <div>
                   <div style={{ fontWeight: 900, color: "#111", fontSize: 22, letterSpacing: "-.01em" }}>
