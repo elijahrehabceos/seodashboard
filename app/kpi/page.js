@@ -3,11 +3,6 @@ import { supabase } from "@/lib/supabase";
 
 export const revalidate = 3600;
 
-// Matches the "{service} in {location}" pattern, e.g. "physical therapy in
-// pasadena ca". Falls back to the earliest-tracked keyword if nothing
-// matches this pattern for a given client.
-const PRIMARY_PATTERN = /.+\bin\b.+/i;
-
 // Clients temporarily excluded from the KPI count (per team decision —
 // not yet ready to be measured, onboarding, etc.)
 const EXCLUDED_OWNERS = new Set([
@@ -20,32 +15,25 @@ const EXCLUDED_OWNERS = new Set([
 async function getKpiData() {
   const [{ data: clients }, { data: keywords }] = await Promise.all([
     supabase.from("clients").select("slug, clinic_name, owner_name").order("clinic_name"),
-    supabase.from("keyword_rankings").select("*").order("id", { ascending: true }),
+    supabase.from("keyword_rankings").select("*").eq("is_primary", true),
   ]);
 
-  const byClient = new Map();
-  for (const k of keywords || []) {
-    if (!byClient.has(k.client_slug)) byClient.set(k.client_slug, []);
-    byClient.get(k.client_slug).push(k);
-  }
+  const primaryByClient = new Map((keywords || []).map((k) => [k.client_slug, k]));
 
   const rows = (clients || [])
     .filter((c) => !EXCLUDED_OWNERS.has(c.owner_name))
     .map((c) => {
-    const clientKeywords = byClient.get(c.slug) || [];
-    const primary =
-      clientKeywords.find((k) => PRIMARY_PATTERN.test(k.keyword)) || clientKeywords[0] || null;
+      const primary = primaryByClient.get(c.slug) || null;
 
-    // Use the best position seen so far THIS WEEK, not just today's snapshot.
-    // Falls back to current position if weekly tracking hasn't kicked in yet.
-    const effectivePosition = primary
-      ? primary.best_position_week ?? primary.position
-      : null;
+      // Use the best position seen so far THIS WEEK, not just today's snapshot.
+      const effectivePosition = primary
+        ? primary.best_position_week ?? primary.position
+        : null;
 
-    const inTop5 = !!(effectivePosition && effectivePosition > 0 && effectivePosition <= 5);
-    const inTop10 = !!(effectivePosition && effectivePosition > 0 && effectivePosition <= 10);
-    return { ...c, primary, effectivePosition, inTop5, inTop10 };
-  });
+      const inTop5 = !!(effectivePosition && effectivePosition > 0 && effectivePosition <= 5);
+      const inTop10 = !!(effectivePosition && effectivePosition > 0 && effectivePosition <= 10);
+      return { ...c, primary, effectivePosition, inTop5, inTop10 };
+    });
 
   const top5Count = rows.filter((r) => r.inTop5).length;
   const top10Count = rows.filter((r) => r.inTop10).length;
@@ -103,12 +91,11 @@ export default async function KpiPage() {
             How this is calculated
           </div>
           <p>
-            For each client, the primary keyword is detected by matching the
-            &ldquo;service in location&rdquo; pattern (e.g. &ldquo;physical
-            therapy in pasadena ca&rdquo;). A client counts toward Top 5 or
-            Top 10 if that keyword hit that position <strong>at any point
-            during the current week</strong>, not just on today&apos;s check,
-            since daily rankings can bounce around.
+            The primary keyword is the literal first keyword added to each
+            client&apos;s SE Ranking project, not a text pattern guess. A
+            client counts toward Top 5 or Top 10 if that keyword hit that
+            position <strong>at any point during the current week</strong>,
+            not just on today&apos;s check.
           </p>
         </div>
 

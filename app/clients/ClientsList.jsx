@@ -3,16 +3,6 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 
-function initials(name) {
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0])
-    .join("")
-    .toUpperCase();
-}
-
 export default function ClientsList({ clients }) {
   const [query, setQuery] = useState("");
 
@@ -61,7 +51,7 @@ export default function ClientsList({ clients }) {
             No client matches &ldquo;{query}&rdquo;.
           </p>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <div style={{ borderTop: "1px solid #e0e0e0" }}>
             {filtered.map((c) => (
               <Link
                 key={c.slug}
@@ -69,39 +59,22 @@ export default function ClientsList({ clients }) {
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: 14,
-                  background: "#fff",
-                  border: "1px solid #e8e8e8",
-                  borderRadius: 12,
-                  padding: "16px 18px",
+                  justifyContent: "space-between",
+                  padding: "22px 4px",
                   textDecoration: "none",
-                  boxShadow: "0 1px 6px rgba(0,0,0,.04)",
+                  borderBottom: "1px solid #e0e0e0",
                 }}
+                className="rd-directory-row"
               >
-                <div
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: "50%",
-                    background: "rgba(205,161,88,.1)",
-                    border: "1px solid rgba(205,161,88,.4)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 12,
-                    fontWeight: 800,
-                    color: "#cda158",
-                    flexShrink: 0,
-                  }}
-                >
-                  {initials(c.clinic_name)}
-                </div>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontWeight: 700, color: "#111", fontSize: 14, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                <div>
+                  <div style={{ fontWeight: 900, color: "#111", fontSize: 22, letterSpacing: "-.01em" }}>
                     {c.clinic_name}
                   </div>
-                  <div style={{ fontSize: 12.5, color: "#999" }}>{c.owner_name}</div>
+                  <div style={{ fontSize: 13, color: "#999", marginTop: 4 }}>{c.owner_name}</div>
                 </div>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#cda158" strokeWidth="2" style={{ flexShrink: 0 }}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
               </Link>
             ))}
           </div>

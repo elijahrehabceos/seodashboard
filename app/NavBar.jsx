@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 
 const LINKS = [
   { href: "/", label: "Home" },
-  { href: "/clients", label: "Clients" },
+  { href: "/clients", label: "Client Directory" },
   { href: "/kpi", label: "SEO Team KPI" },
 ];
 
@@ -39,7 +39,7 @@ export default function NavBar() {
             </button>
           )}
           <Link href="/" className="rd-nav-brand">
-            <img src="/rehabceos-logo.webp" alt="Rehab CEOs" style={{ height: 22, width: "auto" }} />
+            <img src="/rehabceos-logo.webp" alt="Rehab CEOs" style={{ height: 28, width: "auto" }} />
           </Link>
         </div>
         <div className="rd-nav-links">

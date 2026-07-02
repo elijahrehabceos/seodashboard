@@ -21,6 +21,7 @@ create table if not exists keyword_rankings (
   checked_date date,
   best_position_week int,   -- best (lowest) position seen so far this week
   week_start date,          -- Monday of the week best_position_week applies to
+  is_primary boolean default false, -- true for the first keyword ever added to this project in SE Ranking
   updated_at timestamptz default now(),
   unique (client_slug, keyword, site_engine_id)
 );

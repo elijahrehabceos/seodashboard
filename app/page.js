@@ -60,7 +60,7 @@ export default async function HomePage() {
         <div className="rd-menu-grid">
           <Link href="/clients" className="rd-menu-card">
             <div className="rd-menu-card-eyebrow">55 Clients</div>
-            <div className="rd-menu-card-title">Clients</div>
+            <div className="rd-menu-card-title">Client Directory</div>
             <div className="rd-menu-card-desc">
               Browse every client, search by clinic or owner, and drill into
               keyword rankings, AI visibility, and local pack performance for

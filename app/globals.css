@@ -36,7 +36,8 @@ body {
 
 /* ---- Shared report-style design system (used on Home, Clients, KPI, Client detail) ---- */
 .rd-body{font-family:'Manrope',system-ui,sans-serif;background:#f0f0f0;color:#111;font-size:14px;line-height:1.6}
-.rd-cover{background:#000;padding:52px 44px;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.rd-cover{background:#000;padding:52px 44px;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden;background-image:repeating-linear-gradient(135deg,rgba(205,161,88,.035) 0px,rgba(205,161,88,.035) 1px,transparent 1px,transparent 14px)}
+.rd-cover::after{content:"";position:absolute;bottom:0;left:0;width:100%;height:3px;background:linear-gradient(90deg,transparent,#cda158,transparent)}
 .rd-cover-tl{position:absolute;top:32px;left:32px;width:40px;height:40px;border-top:2px solid #cda158;border-left:2px solid #cda158;opacity:.9}
 .rd-cover-tr{position:absolute;top:32px;right:32px;width:40px;height:40px;border-top:2px solid #cda158;border-right:2px solid #cda158;opacity:.9}
 .rd-cover-bl{position:absolute;bottom:32px;left:32px;width:40px;height:40px;border-bottom:2px solid #cda158;border-left:2px solid #cda158;opacity:.9}
@@ -114,11 +115,12 @@ body {
 .rd-back-link{display:inline-block;margin:20px 0 0 44px;font-size:12px;color:#888;text-decoration:none}
 
 /* nav bar */
-.rd-nav{background:#000;border-bottom:1px solid rgba(205,161,88,.2);position:sticky;top:0;z-index:50}
-.rd-nav-inner{max-width:1100px;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:60px}
+.rd-nav{background:#000;border-bottom:1px solid rgba(205,161,88,.2);position:sticky;top:0;z-index:50;box-shadow:0 1px 0 rgba(205,161,88,.08)}
+.rd-nav::after{content:"";display:block;height:2px;background:linear-gradient(90deg,transparent,#cda158,transparent)}
+.rd-nav-inner{max-width:1100px;margin:0 auto;padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:76px}
 .rd-nav-brand{display:flex;align-items:center;gap:10px;color:#fff;font-weight:800;font-size:14px;letter-spacing:.02em;text-decoration:none}
-.rd-nav-links{display:flex;gap:28px}
-.rd-nav-link{color:rgba(255,255,255,.55);font-size:13px;font-weight:600;text-decoration:none;letter-spacing:.02em;transition:color .15s}
+.rd-nav-links{display:flex;gap:36px}
+.rd-nav-link{color:rgba(255,255,255,.55);font-size:14px;font-weight:700;text-decoration:none;letter-spacing:.03em;transition:color .15s;text-transform:uppercase}
 .rd-nav-link:hover{color:#fff}
 .rd-nav-link.active{color:#cda158}
 
@@ -132,3 +134,6 @@ body {
 
 .rd-kpi-link{color:#111;text-decoration:none}
 .rd-kpi-link:hover{text-decoration:underline;color:#cda158}
+
+.rd-directory-row:hover{background:#fafafa}
+.rd-directory-row:hover > div:first-child > div:first-child{color:#cda158}

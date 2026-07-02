@@ -87,6 +87,12 @@ async function refreshKeywordRankings(client) {
 
   const keywordsList = await seGet("/keywords", { site_id: client.site_id });
   const keywordNameById = new Map(keywordsList.map((k) => [String(k.id), k.name]));
+  // The lowest keyword ID is the one added earliest to this project in SE
+  // Ranking — i.e. the original primary local keyword set up for the
+  // client, regardless of whether its text happens to contain "in".
+  const primaryKeywordId = keywordsList.length
+    ? String(Math.min(...keywordsList.map((k) => k.id)))
+    : null;
 
   const weekStart = mondayOfCurrentWeek();
 
@@ -123,6 +129,7 @@ async function refreshKeywordRankings(client) {
         checked_date: latest.date,
         best_position_week: bestPositionWeek,
         week_start: weekStart,
+        is_primary: String(kw.id) === primaryKeywordId,
         updated_at: new Date().toISOString(),
       });
     }
