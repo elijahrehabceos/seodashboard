@@ -278,14 +278,20 @@ async function refreshLocalPack(client) {
       continue; // this location has no data yet or failed — don't let it block the others
     }
 
-    const reports = list?.data?.reports || [];
+    // Defensive: handle either envelope shape Local Falcon's API might use.
+    const reports = list?.data?.reports || list?.reports || [];
     if (!reports.length) continue;
 
-    // group by keyword, keep the most recent report per keyword for this location
+    // group by keyword, keep the most recent report per keyword for this location.
+    // Real reports use a "date" string field (e.g. "6/11/2026 8:00 AM"), not
+    // "timestamp" — comparing on a nonexistent field always failed silently
+    // and left the group stuck on whichever report came first in the array.
     const latestByKeyword = new Map();
     for (const r of reports) {
       const existing = latestByKeyword.get(r.keyword);
-      if (!existing || Number(r.timestamp) > Number(existing.timestamp)) {
+      const rTime = new Date(r.date).getTime();
+      const existingTime = existing ? new Date(existing.date).getTime() : -Infinity;
+      if (!existing || rTime > existingTime) {
         latestByKeyword.set(r.keyword, r);
       }
     }
