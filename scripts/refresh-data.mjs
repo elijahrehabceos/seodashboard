@@ -178,7 +178,13 @@ async function refreshAiVisibility(client) {
   if (!Array.isArray(engines) || engines.length === 0) return 0;
 
   const dateTo = todayISO();
-  const dateFrom = daysAgoISO(30); // "mentioned once this month" rule
+  // Calendar month, not a rolling window — matches the report rule:
+  // "mentioned once in the month = mentioned", tied to the actual month,
+  // not just the last 30 days.
+  const now = new Date();
+  const dateFrom = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1))
+    .toISOString()
+    .slice(0, 10);
 
   const rows = [];
   for (const engine of engines) {
@@ -198,11 +204,14 @@ async function refreshAiVisibility(client) {
     let mentionedAtLeastOnce = false;
     let totalChecks = 0;
     let mentionedChecks = 0;
+    let promptText = null;
 
     for (const item of rankings.items || []) {
+      if (!promptText) promptText = item.keyword || null; // the tracked prompt itself
       for (const p of item.positions || []) {
+        if (p.mention_position === null || p.mention_position === undefined) continue; // no AI block that day
         totalChecks += 1;
-        if (p.mention_position && p.mention_position > 0) {
+        if (p.mention_position > 0) {
           mentionedAtLeastOnce = true;
           mentionedChecks += 1;
         }
@@ -212,6 +221,7 @@ async function refreshAiVisibility(client) {
     rows.push({
       client_slug: client.slug,
       engine: engine.base_name,
+      prompt: promptText,
       mentioned: mentionedAtLeastOnce,
       mention_percent: totalChecks ? Math.round((mentionedChecks / totalChecks) * 100) : null,
       link_percent: null,

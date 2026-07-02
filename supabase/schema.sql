@@ -38,6 +38,7 @@ create table if not exists ai_visibility (
   id bigserial primary key,
   client_slug text references clients(slug) on delete cascade,
   engine text not null,        -- chatgpt, gemini, google_ai_overview, etc.
+  prompt text,                 -- the tracked prompt text itself
   mentioned boolean default false,
   mention_percent numeric,
   link_percent numeric,

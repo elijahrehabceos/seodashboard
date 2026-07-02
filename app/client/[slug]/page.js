@@ -240,6 +240,11 @@ export default async function ClientPage({ params }) {
                     <div className={`rd-ai-llm-card-name ${a.mentioned ? "green" : "gold"}`}>{a.engine.replace(/_/g, " ")}</div>
                     <div className={`rd-ai-llm-card-pct ${a.mentioned ? "green" : "gold"}`}>{a.mentioned ? "Mentioned" : "0%"}</div>
                     <div className="rd-ai-llm-card-pos">{a.mentioned ? "Mentioned in tracked prompt" : "Not mentioned in tracked prompt"}</div>
+                    {a.prompt && (
+                      <div style={{ fontSize: 12, color: "#999", fontStyle: "italic", marginTop: 10, paddingTop: 10, borderTop: "1px solid #eee" }}>
+                        &ldquo;{a.prompt}&rdquo;
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
