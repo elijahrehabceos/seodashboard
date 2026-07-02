@@ -87,7 +87,11 @@ export default async function ClientPage({ params }) {
   return (
     <div className="rd-body">
       <div className="rd-cover">
-        <div className="rd-cover-orbit"></div>
+        <svg className="rd-orbit-svg" viewBox="0 0 1600 340" preserveAspectRatio="none">
+          <defs><filter id="orbitGlow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="6" /></filter></defs>
+          <rect x="4" y="4" width="1592" height="332" fill="none" stroke="#cda158" strokeWidth="10" strokeLinecap="round" vectorEffect="non-scaling-stroke" strokeDasharray="120 3728" filter="url(#orbitGlow)" opacity="0.65" className="rd-orbit-path" />
+          <rect x="4" y="4" width="1592" height="332" fill="none" stroke="#fff6e0" strokeWidth="3" strokeLinecap="round" vectorEffect="non-scaling-stroke" strokeDasharray="120 3728" className="rd-orbit-path" />
+        </svg>
         <div className="rd-cover-tl"></div><div className="rd-cover-tr"></div><div className="rd-cover-bl"></div><div className="rd-cover-br"></div>
         <div className="rd-cover-brand"><img src="/rehabceos-logo.webp" alt="Rehab CEOs" style={{ height: 30, width: "auto" }} /></div>
         <div className="rd-cover-eyebrow">Live SEO Dashboard</div>
