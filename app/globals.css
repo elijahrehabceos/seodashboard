@@ -35,14 +35,43 @@ body {
 }
 
 /* ---- Shared report-style design system (used on Home, Clients, KPI, Client detail) ---- */
-.rd-body{font-family:'Manrope',system-ui,sans-serif;background:#f0f0f0;color:#111;font-size:14px;line-height:1.6}
-.rd-cover{background:#000;padding:52px 44px;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden;background-image:repeating-linear-gradient(135deg,rgba(205,161,88,.035) 0px,rgba(205,161,88,.035) 1px,transparent 1px,transparent 14px)}
+.rd-body{font-family:'Manrope',system-ui,sans-serif;background:#f7f5f1;color:#111;font-size:14px;line-height:1.6}
+.rd-cover{background:#050505;padding:52px 44px;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden;background-image:repeating-linear-gradient(135deg,rgba(205,161,88,.035) 0px,rgba(205,161,88,.035) 1px,transparent 1px,transparent 14px)}
 .rd-cover::after{content:"";position:absolute;bottom:0;left:0;width:100%;height:3px;background:linear-gradient(90deg,transparent,#cda158,transparent)}
+/* Signature: a continuous vital-signs pulse line glowing across every cover — 
+   ties tracking clinic rankings to the literal healthcare world of the clients. */
+.rd-cover::before{
+  content:"";
+  position:absolute;
+  top:34%;
+  left:-10%;
+  width:120%;
+  height:56px;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='320' height='56' viewBox='0 0 320 56'><polyline points='0,28 110,28 128,8 145,48 162,4 179,28 320,28' fill='none' stroke='%23cda158' stroke-width='2'/></svg>");
+  background-repeat:repeat-x;
+  background-size:320px 56px;
+  opacity:.3;
+  pointer-events:none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .rd-cover::before { animation: pulse-glow 2.6s ease-in-out infinite; }
+}
+@keyframes pulse-glow{
+  0%,100%{opacity:.22; filter:drop-shadow(0 0 3px rgba(205,161,88,.4));}
+  50%{opacity:.55; filter:drop-shadow(0 0 14px rgba(205,161,88,.95));}
+}
+.rd-cover-brand,.rd-cover-eyebrow,.rd-cover-title,.rd-cover-domain,.rd-cover-badges{position:relative;z-index:2}
+.rd-cover-title{
+  background:linear-gradient(180deg,#fff 0%,#f3dcb4 55%,#cda158 100%);
+  -webkit-background-clip:text;
+  background-clip:text;
+  -webkit-text-fill-color:transparent;
+}
 .rd-cover-tl{position:absolute;top:32px;left:32px;width:40px;height:40px;border-top:2px solid #cda158;border-left:2px solid #cda158;opacity:.9}
 .rd-cover-tr{position:absolute;top:32px;right:32px;width:40px;height:40px;border-top:2px solid #cda158;border-right:2px solid #cda158;opacity:.9}
 .rd-cover-bl{position:absolute;bottom:32px;left:32px;width:40px;height:40px;border-bottom:2px solid #cda158;border-left:2px solid #cda158;opacity:.9}
 .rd-cover-br{position:absolute;bottom:32px;right:32px;width:40px;height:40px;border-bottom:2px solid #cda158;border-right:2px solid #cda158;opacity:.9}
-.rd-cover-brand{display:flex;align-items:center;gap:16px;margin-bottom:16px;z-index:1}
+.rd-cover-brand{display:flex;align-items:center;gap:16px;margin-bottom:16px}
 .rd-brand-line{width:44px;height:1px;background:linear-gradient(90deg,transparent,#cda158)}
 .rd-brand-line.r{background:linear-gradient(90deg,#cda158,transparent)}
 .rd-brand-text{font-size:11px;letter-spacing:.28em;font-weight:700;color:#cda158;text-transform:uppercase}
@@ -57,15 +86,21 @@ body {
 .rd-sh-num{font-size:11px;color:#cda158;font-weight:800;letter-spacing:.16em;text-transform:uppercase}
 .rd-sh-title{font-size:28px;font-weight:900;color:#000;letter-spacing:-.03em}
 .rd-sh-badge{font-size:10px;letter-spacing:.12em;font-weight:700;color:#888;border:1px solid #ddd;border-radius:20px;padding:5px 14px;text-transform:uppercase;white-space:nowrap}
-.rd-divider{text-align:center;margin:56px 0;color:#cda158;font-size:7px;letter-spacing:14px;opacity:.6}
+.rd-divider{display:flex;align-items:center;gap:14px;margin:56px 0;color:#cda158;font-size:11px;letter-spacing:6px;opacity:.7}
+.rd-divider::before,.rd-divider::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,transparent,rgba(205,161,88,.5),transparent)}
+
+:focus-visible{outline:2px solid #cda158;outline-offset:2px}
 .rd-kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid #ddd;border-radius:12px;overflow:hidden;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.06);margin-bottom:28px}
 .rd-kpi{padding:26px 24px;border-right:1px solid #eee;border-bottom:1px solid #eee;background:#fff}
 .rd-kpi:nth-child(3n){border-right:none}
 .rd-kpi-lbl{font-size:10px;letter-spacing:.15em;font-weight:700;color:#999;text-transform:uppercase;margin-bottom:10px}
-.rd-kpi-val{font-size:40px;font-weight:900;color:#000;line-height:1;letter-spacing:-.03em}
-.rd-kpi-val.g{color:#16a34a}.rd-kpi-val.gold{color:#cda158}
+.rd-kpi-val{font-size:40px;font-weight:900;color:#000;line-height:1;letter-spacing:-.03em;transition:text-shadow .2s}
+.rd-kpi-val.g{color:#16a34a;text-shadow:0 0 18px rgba(22,163,74,.25)}
+.rd-kpi-val.gold{color:#cda158;text-shadow:0 0 18px rgba(205,161,88,.3)}
 .rd-kpi-sub{font-size:12px;color:#aaa;margin-top:8px;font-weight:500}
-.rd-hi-card{background:#fff;border:1px solid #e8e8e8;border-radius:12px;padding:22px 24px;margin-bottom:28px;box-shadow:0 1px 8px rgba(0,0,0,.04)}
+.rd-hi-card{background:#fff;border:1px solid #e8e8e8;border-left:3px solid #ddd;border-radius:12px;padding:22px 24px;margin-bottom:28px;box-shadow:0 1px 8px rgba(0,0,0,.04);transition:box-shadow .2s}
+.rd-hi-card:has(.rd-hi-label.green){border-left-color:#16a34a}
+.rd-hi-card:has(.rd-hi-label.gold){border-left-color:#cda158}
 .rd-hi-label{display:flex;align-items:center;gap:8px;font-size:10px;letter-spacing:.15em;font-weight:800;text-transform:uppercase;margin-bottom:12px}
 .rd-hi-label.green{color:#16a34a}.rd-hi-label.gold{color:#cda158}
 .rd-hi-card p{font-size:13.5px;color:#333;line-height:1.75}
@@ -85,6 +120,7 @@ body {
 .rd-ai-score-center{text-align:center;margin-bottom:36px}
 .rd-ai-score-lbl-top{font-size:9px;letter-spacing:.2em;font-weight:800;color:#999;text-transform:uppercase;margin-bottom:20px}
 .rd-ai-gauge-wrap{position:relative;display:inline-block}
+.rd-ai-gauge-wrap svg circle:nth-of-type(2){filter:drop-shadow(0 0 6px rgba(205,161,88,.55))}
 .rd-ai-gauge-inner{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none}
 .rd-ai-gauge-num{font-size:40px;font-weight:900;letter-spacing:-.04em;line-height:1}
 .rd-ai-gauge-num.green{color:#16a34a}.rd-ai-gauge-num.gold{color:#cda158}
@@ -115,7 +151,7 @@ body {
 .rd-back-link{display:inline-block;margin:20px 0 0 44px;font-size:12px;color:#888;text-decoration:none}
 
 /* nav bar */
-.rd-nav{background:#000;border-bottom:1px solid rgba(205,161,88,.2);position:sticky;top:0;z-index:50;box-shadow:0 1px 0 rgba(205,161,88,.08)}
+.rd-nav{background:rgba(5,5,5,.82);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid rgba(205,161,88,.2);position:sticky;top:0;z-index:50;box-shadow:0 1px 0 rgba(205,161,88,.08)}
 .rd-nav::after{content:"";display:block;height:2px;background:linear-gradient(90deg,transparent,#cda158,transparent)}
 .rd-nav-inner{max-width:1100px;margin:0 auto;padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:76px}
 .rd-nav-brand{display:flex;align-items:center;gap:10px;color:#fff;font-weight:800;font-size:14px;letter-spacing:.02em;text-decoration:none}
@@ -126,8 +162,10 @@ body {
 
 /* menu / landing cards */
 .rd-menu-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:36px}
-.rd-menu-card{display:block;background:#fff;border:1px solid #e8e8e8;border-radius:16px;padding:44px 40px;text-decoration:none;box-shadow:0 2px 12px rgba(0,0,0,.05);transition:transform .15s,box-shadow .15s}
-.rd-menu-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.08);border-color:#cda158}
+.rd-menu-card{display:block;position:relative;background:#fff;border:1px solid #e8e8e8;border-radius:16px;padding:44px 40px;text-decoration:none;box-shadow:0 2px 12px rgba(0,0,0,.05);transition:transform .2s,box-shadow .2s,border-color .2s;overflow:hidden}
+.rd-menu-card::before{content:"";position:absolute;top:0;left:0;width:100%;height:3px;background:linear-gradient(90deg,#cda158,#f3dcb4,#cda158);transform:scaleX(0);transform-origin:left;transition:transform .3s ease}
+.rd-menu-card:hover{transform:translateY(-3px);box-shadow:0 12px 32px rgba(205,161,88,.18),0 2px 12px rgba(0,0,0,.06);border-color:#cda158}
+.rd-menu-card:hover::before{transform:scaleX(1)}
 .rd-menu-card-eyebrow{font-size:11px;letter-spacing:.2em;font-weight:800;color:#cda158;text-transform:uppercase;margin-bottom:14px}
 .rd-menu-card-title{font-size:32px;font-weight:900;color:#000;letter-spacing:-.02em;margin-bottom:12px}
 .rd-menu-card-desc{font-size:15px;color:#777;line-height:1.65}
@@ -135,5 +173,8 @@ body {
 .rd-kpi-link{color:#111;text-decoration:none}
 .rd-kpi-link:hover{text-decoration:underline;color:#cda158}
 
+.rd-directory-row{position:relative;transition:background .15s}
+.rd-directory-row::before{content:"";position:absolute;left:0;top:0;height:100%;width:3px;background:#cda158;transform:scaleY(0);transition:transform .2s ease;transform-origin:center}
 .rd-directory-row:hover{background:#fafafa}
+.rd-directory-row:hover::before{transform:scaleY(1)}
 .rd-directory-row:hover > div:first-child > div:first-child{color:#cda158}

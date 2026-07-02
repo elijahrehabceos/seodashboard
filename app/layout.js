@@ -15,7 +15,7 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
         />
       </head>
-      <body style={{ background: "#f0f0f0", margin: 0 }}>
+      <body style={{ background: "#f7f5f1", margin: 0 }}>
         <NavBar />
         {children}
       </body>
