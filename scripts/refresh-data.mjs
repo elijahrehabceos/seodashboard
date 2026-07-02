@@ -28,6 +28,18 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 const SE_BASE = "https://api.seranking.com/v1/project-management";
 const LF_BASE = "https://api.localfalcon.com";
 
+// Manual overrides: for these clients, force the primary keyword to the one
+// containing this text, instead of trusting the lowest-ID auto-detection.
+// Matched case-insensitively as a substring against the keyword name.
+const PRIMARY_KEYWORD_OVERRIDES = {
+  "avila-pt": "corpus christi",
+  "body-moksha-pt": "chatham",
+  "focus-pt": "louisville",
+  "mid-county-pt": "woodbridge",
+  "pt-group-of-florida": "fort lauderdale",
+  "back-worx": "bradenton",
+};
+
 function todayISO() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -87,12 +99,21 @@ async function refreshKeywordRankings(client) {
 
   const keywordsList = await seGet("/keywords", { site_id: client.site_id });
   const keywordNameById = new Map(keywordsList.map((k) => [String(k.id), k.name]));
-  // The lowest keyword ID is the one added earliest to this project in SE
-  // Ranking — i.e. the original primary local keyword set up for the
-  // client, regardless of whether its text happens to contain "in".
-  const primaryKeywordId = keywordsList.length
-    ? String(Math.min(...keywordsList.map((k) => k.id)))
-    : null;
+
+  // Determine the primary keyword: use the manual override if one exists
+  // for this client, otherwise fall back to the lowest keyword ID (the
+  // first one ever added to the project in SE Ranking).
+  let primaryKeywordId = null;
+  const overrideText = PRIMARY_KEYWORD_OVERRIDES[client.slug];
+  if (overrideText) {
+    const match = keywordsList.find((k) =>
+      k.name.toLowerCase().includes(overrideText.toLowerCase())
+    );
+    if (match) primaryKeywordId = String(match.id);
+  }
+  if (!primaryKeywordId && keywordsList.length) {
+    primaryKeywordId = String(Math.min(...keywordsList.map((k) => k.id)));
+  }
 
   const weekStart = mondayOfCurrentWeek();
 
