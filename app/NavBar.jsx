@@ -39,10 +39,7 @@ export default function NavBar() {
             </button>
           )}
           <Link href="/" className="rd-nav-brand">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#cda158" strokeWidth="2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 12h4l2-7 4 14 2-7h6" />
-            </svg>
-            REHAB CEOS SEO
+            <img src="/rehabceos-logo.webp" alt="Rehab CEOs" style={{ height: 22, width: "auto" }} />
           </Link>
         </div>
         <div className="rd-nav-links">

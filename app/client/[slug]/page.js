@@ -85,7 +85,7 @@ export default async function ClientPage({ params }) {
     <div className="rd-body">
       <div className="rd-cover">
         <div className="rd-cover-tl"></div><div className="rd-cover-tr"></div><div className="rd-cover-bl"></div><div className="rd-cover-br"></div>
-        <div className="rd-cover-brand"><div className="rd-brand-line"></div><div className="rd-brand-text">Rehab CEOs</div><div className="rd-brand-line r"></div></div>
+        <div className="rd-cover-brand"><img src="/rehabceos-logo.webp" alt="Rehab CEOs" style={{ height: 30, width: "auto" }} /></div>
         <div className="rd-cover-eyebrow">Live SEO Dashboard</div>
         <div className="rd-cover-title">{client.clinic_name}</div>
         <div className="rd-cover-domain">{client.domain}</div>
