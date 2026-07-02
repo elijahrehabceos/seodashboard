@@ -80,101 +80,18 @@ export default async function ClientPage({ params }) {
   const arpIsGood = avgArp !== null && avgArp <= 3;
 
   return (
-    <>
-      <style>{`
-        .rd-body{font-family:'Manrope',system-ui,sans-serif;background:#f0f0f0;color:#111;font-size:14px;line-height:1.6}
-        .rd-cover{background:#000;padding:52px 44px;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden}
-        .rd-cover-tl{position:absolute;top:32px;left:32px;width:40px;height:40px;border-top:2px solid #cda158;border-left:2px solid #cda158;opacity:.9}
-        .rd-cover-tr{position:absolute;top:32px;right:32px;width:40px;height:40px;border-top:2px solid #cda158;border-right:2px solid #cda158;opacity:.9}
-        .rd-cover-bl{position:absolute;bottom:32px;left:32px;width:40px;height:40px;border-bottom:2px solid #cda158;border-left:2px solid #cda158;opacity:.9}
-        .rd-cover-br{position:absolute;bottom:32px;right:32px;width:40px;height:40px;border-bottom:2px solid #cda158;border-right:2px solid #cda158;opacity:.9}
-        .rd-cover-brand{display:flex;align-items:center;gap:16px;margin-bottom:16px;z-index:1}
-        .rd-brand-line{width:44px;height:1px;background:linear-gradient(90deg,transparent,#cda158)}
-        .rd-brand-line.r{background:linear-gradient(90deg,#cda158,transparent)}
-        .rd-brand-text{font-size:11px;letter-spacing:.28em;font-weight:700;color:#cda158;text-transform:uppercase}
-        .rd-cover-eyebrow{font-size:11px;letter-spacing:.22em;color:rgba(255,255,255,.35);text-transform:uppercase;margin-bottom:16px;z-index:1}
-        .rd-cover-title{font-size:44px;font-weight:900;color:#fff;letter-spacing:-.03em;line-height:1;text-align:center;margin-bottom:12px;z-index:1}
-        .rd-cover-domain{font-size:11px;letter-spacing:.22em;color:#cda158;font-weight:600;text-transform:uppercase;margin-bottom:28px;z-index:1}
-        .rd-cover-badges{display:flex;gap:12px;z-index:1}
-        .rd-cbadge{padding:8px 24px;border:1.5px solid rgba(205,161,88,.6);border-radius:40px;font-size:12px;font-weight:700;color:#cda158;letter-spacing:.1em;background:transparent}
-        .rd-page{max-width:900px;margin:0 auto;padding:64px 44px}
-        .rd-sh{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:36px;padding-bottom:16px;border-bottom:2px solid #e0e0e0}
-        .rd-sh-left{display:flex;align-items:baseline;gap:14px}
-        .rd-sh-num{font-size:11px;color:#cda158;font-weight:800;letter-spacing:.16em;text-transform:uppercase}
-        .rd-sh-title{font-size:28px;font-weight:900;color:#000;letter-spacing:-.03em}
-        .rd-sh-badge{font-size:10px;letter-spacing:.12em;font-weight:700;color:#888;border:1px solid #ddd;border-radius:20px;padding:5px 14px;text-transform:uppercase;white-space:nowrap}
-        .rd-divider{text-align:center;margin:56px 0;color:#cda158;font-size:7px;letter-spacing:14px;opacity:.6}
-        .rd-kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid #ddd;border-radius:12px;overflow:hidden;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.06);margin-bottom:28px}
-        .rd-kpi{padding:26px 24px;border-right:1px solid #eee;border-bottom:1px solid #eee;background:#fff}
-        .rd-kpi:nth-child(3n){border-right:none}
-        .rd-kpi-lbl{font-size:10px;letter-spacing:.15em;font-weight:700;color:#999;text-transform:uppercase;margin-bottom:10px}
-        .rd-kpi-val{font-size:40px;font-weight:900;color:#000;line-height:1;letter-spacing:-.03em}
-        .rd-kpi-val.g{color:#16a34a}.rd-kpi-val.gold{color:#cda158}
-        .rd-kpi-sub{font-size:12px;color:#aaa;margin-top:8px;font-weight:500}
-        .rd-hi-card{background:#fff;border:1px solid #e8e8e8;border-radius:12px;padding:22px 24px;margin-bottom:28px;box-shadow:0 1px 8px rgba(0,0,0,.04)}
-        .rd-hi-label{display:flex;align-items:center;gap:8px;font-size:10px;letter-spacing:.15em;font-weight:800;text-transform:uppercase;margin-bottom:12px}
-        .rd-hi-label.green{color:#16a34a}.rd-hi-label.gold{color:#cda158}
-        .rd-hi-card p{font-size:13.5px;color:#333;line-height:1.75}
-        .rd-rtable{width:100%;border-collapse:collapse;border-radius:10px;overflow:hidden;border:1px solid #e8e8e8;background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.04);font-size:13px}
-        .rd-rtable thead tr{background:#000}
-        .rd-rtable thead th{padding:12px 14px;font-size:10px;letter-spacing:.12em;font-weight:700;text-transform:uppercase;text-align:center;color:#cda158}
-        .rd-rtable thead th:first-child{text-align:left;color:#fff}
-        .rd-rtable tbody tr{border-bottom:1px solid #f2f2f2}.rd-rtable tbody tr:last-child{border-bottom:none}
-        .rd-rtable tbody td{padding:11px 14px;color:#333;font-weight:500;text-align:center}
-        .rd-rtable tbody td:first-child{text-align:left;font-weight:600;font-size:12.5px;color:#111}
-        .rd-rtable tbody td.p1{color:#16a34a;font-weight:800}.rd-rtable tbody td.p2{color:#16a34a;font-weight:700}.rd-rtable tbody td.p3{color:#16a34a;font-weight:700}
-        .rd-rtable tbody td.pw{color:#cda158;font-weight:600}.rd-rtable tbody td.pnr{color:#bbb;font-weight:500;font-size:12px}
-        .rd-rtable tbody td.tup{color:#16a34a;font-weight:700}.rd-rtable tbody td.tdn{color:#cda158;font-weight:700}.rd-rtable tbody td.tfl{color:#bbb;font-weight:500}
-        .rd-ai-eyebrow{font-size:10px;letter-spacing:.2em;font-weight:800;color:#cda158;text-transform:uppercase;margin-bottom:8px}
-        .rd-ai-main-title{font-size:36px;font-weight:900;color:#000;letter-spacing:-.03em;margin-bottom:8px}
-        .rd-ai-main-sub{font-size:13px;color:#999;margin-bottom:36px;font-weight:500}
-        .rd-ai-score-center{text-align:center;margin-bottom:36px}
-        .rd-ai-score-lbl-top{font-size:9px;letter-spacing:.2em;font-weight:800;color:#999;text-transform:uppercase;margin-bottom:20px}
-        .rd-ai-gauge-wrap{position:relative;display:inline-block}
-        .rd-ai-gauge-inner{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none}
-        .rd-ai-gauge-num{font-size:40px;font-weight:900;letter-spacing:-.04em;line-height:1}
-        .rd-ai-gauge-num.green{color:#16a34a}.rd-ai-gauge-num.gold{color:#cda158}
-        .rd-ai-gauge-grade{font-size:10px;letter-spacing:.14em;font-weight:800;text-transform:uppercase;margin-top:3px}
-        .rd-ai-gauge-grade.green{color:#16a34a}.rd-ai-gauge-grade.gold{color:#cda158}
-        .rd-ai-llm-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
-        .rd-ai-llm-card{border:1px solid #e8e8e8;border-radius:12px;padding:24px 28px;background:#fff;box-shadow:0 1px 8px rgba(0,0,0,.04)}
-        .rd-ai-llm-card-name{font-size:10px;letter-spacing:.18em;font-weight:800;text-transform:uppercase;margin-bottom:16px}
-        .rd-ai-llm-card-name.green{color:#16a34a}.rd-ai-llm-card-name.gold{color:#cda158}
-        .rd-ai-llm-card-pct{font-size:44px;font-weight:900;letter-spacing:-.04em;line-height:1;margin-bottom:12px}
-        .rd-ai-llm-card-pct.green{color:#16a34a}.rd-ai-llm-card-pct.gold{color:#cda158}
-        .rd-ai-llm-card-pos{font-size:13px;color:#555;font-weight:500}
-        .rd-lp-card{margin-bottom:36px;border-radius:12px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,.08);background:#fff}
-        .rd-lp-hdr{background:#000;display:grid;grid-template-columns:1fr auto;align-items:stretch}
-        .rd-lp-city{padding:20px 24px}.rd-lp-city-name{font-size:22px;font-weight:900;color:#fff;letter-spacing:-.02em}
-        .rd-lp-city-sub{font-size:10px;letter-spacing:.18em;font-weight:600;color:rgba(255,255,255,.35);text-transform:uppercase;margin-top:3px}
-        .rd-lp-stat{padding:20px 24px;border-left:1px solid rgba(255,255,255,.08);text-align:center;display:flex;flex-direction:column;justify-content:center}
-        .rd-lp-stat-lbl{font-size:9px;letter-spacing:.15em;font-weight:700;color:rgba(255,255,255,.35);text-transform:uppercase;margin-bottom:5px}
-        .rd-lp-stat-val{font-size:24px;font-weight:900;letter-spacing:-.02em}
-        .rd-lp-stat-val.good{color:#16a34a}.rd-lp-stat-val.opp{color:#cda158}
-        .rd-map-wrap{overflow:hidden;border-top:1px solid #e8e8e8;background:#f5f5f5;padding:16px;text-align:center}
-        .rd-lp-heatmap{width:85%;display:block;border:none;margin:0 auto;border-radius:6px;box-shadow:0 2px 10px rgba(0,0,0,.12)}
-        .rd-lp-heatmap-missing{padding:32px;color:#999;font-size:12.5px}
-        .rd-lp-foot{padding:14px 22px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid #efefef;flex-wrap:wrap;gap:8px}
-        .rd-lp-kw{font-size:11px;color:#888;font-weight:600}.rd-lp-kw span{color:#111;font-weight:700}
-        .rd-report-footer{margin-top:64px;padding:24px 0;border-top:1px solid #ddd;display:flex;justify-content:space-between;align-items:center}
-        .rd-ft-brand{font-size:13px;font-weight:700;color:#333}.rd-ft-brand span{color:#cda158;border-bottom:1px solid #cda158;padding-bottom:1px}
-        .rd-back-link{display:inline-block;margin:20px 0 0 44px;font-size:12px;color:#888;text-decoration:none}
-      `}</style>
+    <div className="rd-body">
+      <div className="rd-cover">
+        <div className="rd-cover-tl"></div><div className="rd-cover-tr"></div><div className="rd-cover-bl"></div><div className="rd-cover-br"></div>
+        <div className="rd-cover-brand"><div className="rd-brand-line"></div><div className="rd-brand-text">Rehab CEOs</div><div className="rd-brand-line r"></div></div>
+        <div className="rd-cover-eyebrow">Live SEO Dashboard</div>
+        <div className="rd-cover-title">{client.clinic_name}</div>
+        <div className="rd-cover-domain">{client.domain}</div>
+        <div className="rd-cover-badges"><div className="rd-cbadge">{client.owner_name}</div></div>
+      </div>
 
-      <div className="rd-body">
-        <a href="/" className="rd-back-link">← All clients</a>
-
-        <div className="rd-cover">
-          <div className="rd-cover-tl"></div><div className="rd-cover-tr"></div><div className="rd-cover-bl"></div><div className="rd-cover-br"></div>
-          <div className="rd-cover-brand"><div className="rd-brand-line"></div><div className="rd-brand-text">Rehab CEOs</div><div className="rd-brand-line r"></div></div>
-          <div className="rd-cover-eyebrow">Live SEO Dashboard</div>
-          <div className="rd-cover-title">{client.clinic_name}</div>
-          <div className="rd-cover-domain">{client.domain}</div>
-          <div className="rd-cover-badges"><div className="rd-cbadge">{client.owner_name}</div></div>
-        </div>
-
-        <div className="rd-page">
-          <div className="rd-sh"><div className="rd-sh-left"><span className="rd-sh-num">01</span><span className="rd-sh-title">Executive Summary</span></div><span className="rd-sh-badge">Live</span></div>
+      <div className="rd-page">
+        <div className="rd-sh"><div className="rd-sh-left"><span className="rd-sh-num">01</span><span className="rd-sh-title">Executive Summary</span></div><span className="rd-sh-badge">Live</span></div>
 
           <div className="rd-kpi-grid">
             <div className="rd-kpi">
@@ -315,6 +232,5 @@ export default async function ClientPage({ params }) {
           <ClientChat slug={params.slug} />
         </div>
       </div>
-    </>
   );
 }

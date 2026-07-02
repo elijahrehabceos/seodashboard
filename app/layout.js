@@ -1,4 +1,5 @@
 import "./globals.css";
+import NavBar from "./NavBar";
 
 export const metadata = {
   title: "Rehab CEOs SEO Dashboard",
@@ -10,11 +11,12 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <head>
         <link
-          href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800;900&display=swap"
           rel="stylesheet"
         />
       </head>
-      <body className="bg-black text-white font-manrope min-h-screen">
+      <body style={{ background: "#f0f0f0", margin: 0 }}>
+        <NavBar />
         {children}
       </body>
     </html>
