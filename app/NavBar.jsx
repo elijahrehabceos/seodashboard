@@ -9,6 +9,7 @@ const LINKS = [
   { href: "/priority", label: "Priority Queue" },
   { href: "/kpi", label: "SEO Team KPI" },
   { href: "/audit", label: "Site Audit" },
+  { href: "/blog-generator", label: "Blog Generator" },
 ];
 
 export default function NavBar() {

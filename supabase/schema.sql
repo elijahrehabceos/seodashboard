@@ -94,6 +94,19 @@ create table if not exists priority_recommendations (
   generated_at timestamptz default now()
 );
 alter table priority_recommendations enable row level security;
+
+create table if not exists generated_blogs (
+  id bigserial primary key,
+  client_slug text references clients(slug) on delete cascade,
+  keyword text not null,
+  title text,
+  meta_description text,
+  body_html text,
+  word_count int,
+  notes text,
+  generated_at timestamptz default now()
+);
+alter table generated_blogs enable row level security;
   id bigserial primary key,
   client_slug text references clients(slug) on delete cascade,
   keyword text not null,
@@ -114,3 +127,4 @@ create policy "public read client_insights" on client_insights for select using 
 create policy "public read search_engines" on search_engines for select using (true);
 create policy "public read keyword_month_snapshots" on keyword_month_snapshots for select using (true);
 create policy "public read priority_recommendations" on priority_recommendations for select using (true);
+create policy "public read generated_blogs" on generated_blogs for select using (true);

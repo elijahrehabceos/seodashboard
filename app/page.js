@@ -108,6 +108,15 @@ export default async function HomePage() {
               seconds, no manual audit needed.
             </div>
           </Link>
+
+          <Link href="/blog-generator" className="rd-menu-card animate-fade-up" style={{ animationDelay: "0.45s" }}>
+            <div className="rd-menu-card-eyebrow">Content Tool</div>
+            <div className="rd-menu-card-title">Blog Generator</div>
+            <div className="rd-menu-card-desc">
+              900-1200 word posts with real internal links pulled from the
+              client&apos;s own site and live-searched external sources.
+            </div>
+          </Link>
         </div>
 
         <div className="rd-divider">· · ·</div>
