@@ -4,9 +4,16 @@ export const maxDuration = 60;
 
 const MAX_LINKS_CHECKED_PER_PAGE = 20;
 
+const BROWSER_UA =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
+
 async function safeFetch(url, opts = {}) {
   try {
-    const res = await fetch(url, { redirect: "follow", ...opts });
+    const res = await fetch(url, {
+      redirect: "follow",
+      headers: { "User-Agent": BROWSER_UA, ...(opts.headers || {}) },
+      ...opts,
+    });
     const text = opts.method === "HEAD" ? "" : await res.text();
     return { ok: res.ok, status: res.status, finalUrl: res.url, text };
   } catch (err) {
@@ -63,15 +70,6 @@ function runTechnicalChecks(url, html) {
     severity: schemaBlocks.length > 0 ? "pass" : "warning",
   });
 
-  const images = $("img");
-  const missingAlt = images.filter((i, el) => !$(el).attr("alt")?.trim()).length;
-  checks.push({
-    id: "alt_text",
-    label: "Image alt text",
-    detail: `${missingAlt} of ${images.length} images missing alt text`,
-    severity: missingAlt === 0 ? "pass" : missingAlt / Math.max(images.length, 1) > 0.5 ? "critical" : "warning",
-  });
-
   checks.push({
     id: "https",
     label: "HTTPS",
@@ -92,16 +90,21 @@ function runTechnicalChecks(url, html) {
 }
 
 function findShortcodeArtifacts(bodyText) {
+  // Real shortcodes follow WordPress convention: lowercase tag name,
+  // optionally with attr="value" pairs or a self-closing slash. This
+  // deliberately excludes normal bracketed text like "[Read More]",
+  // "[1]" citations, or Cloudflare's "[email protected]" obfuscation,
+  // none of which are actually broken shortcodes.
   const patterns = [
-    /\[[a-zA-Z][a-zA-Z0-9_\-]*(?:\s[^\[\]]*)?\]/g,
-    /\{\{[^{}]+\}\}/g,
-    /<\?php.*?\?>/gs,
-    /%[A-Z_]+%/g,
+    /\[\/?[a-z][a-z0-9_-]{2,}(?:\s+[a-z_-]+=(?:"[^"]*"|'[^']*'))*\s*\/?\]/g,
+    /\{\{[a-z_][a-z0-9_.]*\}\}/gi, // unrendered template variables like {{first_name}}
   ];
   const found = new Set();
   for (const re of patterns) {
     const matches = bodyText.match(re) || [];
-    matches.forEach((m) => found.add(m.trim()));
+    matches.forEach((m) => {
+      if (!/email\s*protected/i.test(m)) found.add(m.trim());
+    });
   }
   return [...found].slice(0, 15);
 }
