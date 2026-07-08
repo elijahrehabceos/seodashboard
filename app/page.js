@@ -90,6 +90,15 @@ export default async function HomePage() {
               primary local keyword, at a glance.
             </div>
           </Link>
+
+          <Link href="/priority" className="rd-menu-card animate-fade-up" style={{ animationDelay: "0.25s" }}>
+            <div className="rd-menu-card-eyebrow">Where To Focus</div>
+            <div className="rd-menu-card-title">Priority Queue</div>
+            <div className="rd-menu-card-desc">
+              Skip scrolling all 55 clients, see who actually needs
+              attention today and why.
+            </div>
+          </Link>
         </div>
 
         <div className="rd-divider">· · ·</div>
