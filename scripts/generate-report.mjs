@@ -31,6 +31,10 @@ function monthLabel(date = new Date()) {
 function monthCode(date = new Date()) {
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
 }
+function prevMonthInfo(date = new Date()) {
+  const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() - 1, 1));
+  return { code: monthCode(d), label: d.toLocaleDateString("en-US", { month: "short", timeZone: "UTC" }) };
+}
 
 function posClass(p) {
   if (!p || p <= 0) return "pnr";
@@ -69,15 +73,45 @@ async function askClaude(prompt, maxTokens = 350) {
   return json?.content?.find((b) => b.type === "text")?.text?.trim() || "";
 }
 
-async function fetchGoogleRating(placeIds) {
-  if (!LOCAL_FALCON_KEY || !placeIds?.length) return null;
+async function snapshotAndGetPrevious(client, mappedKeywords, code) {
+  // Lock in this month's positions (so re-generating the same month's report
+  // doesn't shift the baseline), then pull last month's snapshot to compare.
+  const currentRows = mappedKeywords
+    .filter((k) => k.position != null)
+    .map((k) => ({
+      client_slug: client.slug,
+      keyword: k.keyword,
+      site_engine_id: k.site_engine_id,
+      month_code: code,
+      position: k.position,
+    }));
+  if (currentRows.length) {
+    await supabase
+      .from("keyword_month_snapshots")
+      .upsert(currentRows, { onConflict: "client_slug,keyword,site_engine_id,month_code" });
+  }
+
+  const prev = prevMonthInfo();
+  const { data: prevRows } = await supabase
+    .from("keyword_month_snapshots")
+    .select("keyword,site_engine_id,position")
+    .eq("client_slug", client.slug)
+    .eq("month_code", prev.code);
+
+  const prevMap = new Map((prevRows || []).map((r) => [`${r.keyword}::${r.site_engine_id}`, r.position]));
+  return { prevMap, prevLabel: prev.label };
+}
+  if (!LOCAL_FALCON_KEY) return null;
   try {
-    const body = new URLSearchParams({ api_key: LOCAL_FALCON_KEY, place_id: placeIds[0] });
+    const body = new URLSearchParams({ api_key: LOCAL_FALCON_KEY, query: client.clinic_name });
     const res = await fetch("https://api.localfalcon.com/v1/locations/", { method: "POST", body });
     const json = await res.json();
-    const loc = json?.data?.locations?.[0] || json?.locations?.[0];
-    if (!loc) return null;
-    return { rating: loc.rating, reviews: loc.reviews };
+    const locations = json?.data?.locations || json?.locations || [];
+    // Multiple businesses can share similar names — disambiguate by domain.
+    const match =
+      locations.find((l) => l.url && client.domain && l.url.includes(client.domain)) || locations[0];
+    if (!match || !match.rating) return null;
+    return { rating: match.rating, reviews: match.reviews };
   } catch {
     return null; // rating tile just gets omitted — not critical to the report
   }
@@ -105,13 +139,18 @@ function renderKpiGrid(kpis) {
     .join("\n");
 }
 
-function renderMarketBlock(regionLabel, groupKeywords, insightHtml) {
+function renderMarketBlock(regionLabel, groupKeywords, insightHtml, prevMap, prevLabel, currLabel) {
   const rows = groupKeywords
-    .map(
-      (k) => `<tr><td>${esc(k.keyword)}</td><td class="${posClass(k.position)}">${
-        k.position && k.position > 0 ? k.position : "NR"
-      }</td><td class="${trendClass(k.position_change)}">${trendLabel(k.position_change)}</td></tr>`
-    )
+    .map((k) => {
+      const prevPos = prevMap.get(`${k.keyword}::${k.site_engine_id}`);
+      const currPos = k.position;
+      const change = prevPos && currPos ? prevPos - currPos : k.position_change;
+      return `<tr><td>${esc(k.keyword)}</td><td class="${posClass(prevPos)}">${
+        prevPos && prevPos > 0 ? prevPos : "—"
+      }</td><td class="${posClass(currPos)}">${
+        currPos && currPos > 0 ? currPos : "NR"
+      }</td><td class="${trendClass(change)}">${trendLabel(change)}</td></tr>`;
+    })
     .join("\n");
   const bestPos = groupKeywords.filter((k) => k.position > 0).sort((a, b) => a.position - b.position)[0];
   const badge =
@@ -122,7 +161,7 @@ function renderMarketBlock(regionLabel, groupKeywords, insightHtml) {
   return `<div class="market-block">
   <div class="mkt-hdr"><div><span class="mkt-name">${esc(regionLabel)}</span></div>${badge}</div>
   <table class="rtable">
-    <thead><tr><th>Keyword</th><th>Position</th><th>Trend</th></tr></thead>
+    <thead><tr><th>Keyword</th><th>${esc(prevLabel)}</th><th>${esc(currLabel)}</th><th>Trend</th></tr></thead>
     <tbody>${rows}</tbody>
   </table>
   <div class="insight">
@@ -177,7 +216,9 @@ async function generateReportForClient(client) {
     ? (local.reduce((s, l) => s + (Number(l.arp) || 0), 0) / local.filter((l) => l.arp != null).length).toFixed(2)
     : null;
 
-  const rating = await fetchGoogleRating((client.local_falcon_place_id || "").split(",").filter(Boolean));
+  const rating = await fetchGoogleRating(client);
+  const { prevMap, prevLabel } = await snapshotAndGetPrevious(client, mappedKeywords, code);
+  const currLabel = new Date().toLocaleDateString("en-US", { month: "short", timeZone: "UTC" });
 
   // --- Claude-written narrative sections ---
   const execPrompt = `You write the Executive Summary insight box for a monthly SEO report
@@ -204,7 +245,7 @@ of ${client.clinic_name}'s SEO report. Rankings: ${JSON.stringify(
       groupKeywords.map((k) => ({ keyword: k.keyword, position: k.position, change: k.position_change }))
     )}. Confident, factual, no hype, no em dashes, plain text only.`;
     const insightText = await askClaude(marketPrompt, 200);
-    marketBlocksHtml.push(renderMarketBlock(regionLabel, groupKeywords, esc(insightText)));
+    marketBlocksHtml.push(renderMarketBlock(regionLabel, groupKeywords, esc(insightText), prevMap, prevLabel, currLabel));
   }
 
   let aiNarrative = "";
@@ -217,6 +258,14 @@ monthly SEO report. Data: ${JSON.stringify(
   }
 
   // --- Assemble KPI grid (Executive Summary) ---
+  const rankedPositions = mappedKeywords.filter((k) => k.position > 0).map((k) => k.position);
+  const positionRange =
+    rankedPositions.length
+      ? rankedPositions.length === 1
+        ? `#${rankedPositions[0]}`
+        : `#${Math.min(...rankedPositions)}-${Math.max(...rankedPositions)}`
+      : "—";
+
   const kpis = [
     {
       label: "Best Organic Position",
@@ -225,9 +274,10 @@ monthly SEO report. Data: ${JSON.stringify(
       cls: bestPosition && bestPosition.position <= 5 ? "g" : "gold",
     },
     {
-      label: "Tracked Keywords",
-      value: mappedKeywords.length,
-      sub: `${label} tracking`,
+      label: "Month-End Positions",
+      value: positionRange,
+      sub: `All tracked keywords, ${label}`,
+      cls: rankedPositions.length && Math.max(...rankedPositions) <= 10 ? "g" : "gold",
     },
     {
       label: "Local Pack ARP",
@@ -245,6 +295,7 @@ monthly SEO report. Data: ${JSON.stringify(
   if (rating?.rating) {
     kpis.push({ label: "Google Rating", value: rating.rating, sub: `${rating.reviews || "—"} reviews`, cls: "g" });
   }
+  kpis.push({ label: "Tracked Keywords", value: mappedKeywords.length, sub: `${label} tracking` });
 
   const aiSection = ai.length
     ? `<div class="ai-eyebrow">Section 03</div>

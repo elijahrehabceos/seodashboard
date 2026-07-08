@@ -86,6 +86,18 @@ alter table refresh_log enable row level security;
 alter table client_insights enable row level security;
 alter table search_engines enable row level security;
 
+create table if not exists keyword_month_snapshots (
+  id bigserial primary key,
+  client_slug text references clients(slug) on delete cascade,
+  keyword text not null,
+  site_engine_id int,
+  month_code text not null,   -- e.g. '2026-07'
+  position int,
+  created_at timestamptz default now(),
+  unique (client_slug, keyword, site_engine_id, month_code)
+);
+alter table keyword_month_snapshots enable row level security;
+
 create policy "public read clients" on clients for select using (true);
 create policy "public read keyword_rankings" on keyword_rankings for select using (true);
 create policy "public read ai_visibility" on ai_visibility for select using (true);
@@ -93,3 +105,4 @@ create policy "public read local_pack" on local_pack for select using (true);
 create policy "public read refresh_log" on refresh_log for select using (true);
 create policy "public read client_insights" on client_insights for select using (true);
 create policy "public read search_engines" on search_engines for select using (true);
+create policy "public read keyword_month_snapshots" on keyword_month_snapshots for select using (true);
