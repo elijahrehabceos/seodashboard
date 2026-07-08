@@ -21,9 +21,26 @@ async function safeFetch(url, opts = {}) {
   }
 }
 
-// Blog/non-service content we don't want cluttering a service-page audit.
-function isBlogLikeUrl(u) {
-  return /\/(blog|news|category|tag|tags|author)\//i.test(u) || /\/20\d\d\/\d\d?\//.test(u);
+// Only these are in scope for a service-page audit: the homepage, contact
+// page, location page(s), and everything nested under /what-we-treat/ or
+// /services/. Everything else (blog posts, about pages, random content) is
+// deliberately excluded — a whitelist is far more reliable here than trying
+// to blacklist every possible blog URL pattern.
+function isInScope(u, homepageUrl) {
+  if (u === homepageUrl) return true;
+  let path;
+  try {
+    path = new URL(u).pathname.toLowerCase();
+  } catch {
+    return false;
+  }
+  if (path === "/" || path === "") return true;
+  return (
+    path.includes("/what-we-treat") ||
+    path.includes("/services") ||
+    path.includes("contact") ||
+    path.includes("location")
+  );
 }
 
 async function parseSitemapUrls(sitemapUrl, depth = 0) {
@@ -81,7 +98,7 @@ async function crawlByDepth(homepageHtml, homepageUrl, host) {
         const abs = new URL(href, baseUrl);
         abs.hash = "";
         abs.search = "";
-        if (abs.hostname === host && !isBlogLikeUrl(abs.toString())) links.add(abs.toString());
+        if (abs.hostname === host && isInScope(abs.toString(), homepageUrl)) links.add(abs.toString());
       } catch {}
     });
     return links;
@@ -104,7 +121,7 @@ async function crawlByDepth(homepageHtml, homepageUrl, host) {
     if (found.size < MAX_PAGES) found.add(l);
   });
 
-  return [...found].filter((u) => !isBlogLikeUrl(u));
+  return [...found].filter((u) => isInScope(u, homepageUrl));
 }
 
 export async function POST(req) {
@@ -128,8 +145,11 @@ export async function POST(req) {
     // with sitemap-index support for large WordPress sites).
     const { urls: sitemapUrls, source } = await findSitemapUrls(origin);
     if (sitemapUrls.length) {
-      const filtered = sitemapUrls.filter((u) => !isBlogLikeUrl(u)).slice(0, MAX_PAGES);
-      return Response.json({ pages: filtered, source: `sitemap (${source})`, startUrl: finalUrl });
+      const filtered = sitemapUrls.filter((u) => isInScope(u, finalUrl)).slice(0, MAX_PAGES);
+      if (filtered.length) {
+        return Response.json({ pages: filtered, source: `sitemap (${source})`, startUrl: finalUrl });
+      }
+      // Sitemap existed but nothing matched our target paths — fall through to crawl.
     }
 
     // Fallback: depth-2 crawl (homepage links, then links found on those
