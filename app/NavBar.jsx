@@ -8,6 +8,7 @@ const LINKS = [
   { href: "/clients", label: "Client Directory" },
   { href: "/priority", label: "Priority Queue" },
   { href: "/kpi", label: "SEO Team KPI" },
+  { href: "/audit", label: "Site Audit" },
 ];
 
 export default function NavBar() {

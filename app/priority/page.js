@@ -11,11 +11,14 @@ const EXCLUDED_OWNERS = new Set([
 ]);
 
 async function getPriorityData() {
-  const [{ data: clients }, { data: keywords }, { data: ai }] = await Promise.all([
+  const [{ data: clients }, { data: keywords }, { data: ai }, { data: recommendations }] = await Promise.all([
     supabase.from("clients").select("slug, clinic_name, owner_name").order("clinic_name"),
     supabase.from("keyword_rankings").select("*"),
     supabase.from("ai_visibility").select("*"),
+    supabase.from("priority_recommendations").select("*"),
   ]);
+
+  const recByClient = new Map((recommendations || []).map((r) => [r.client_slug, r]));
 
   const kwByClient = new Map();
   for (const k of keywords || []) {
@@ -71,7 +74,8 @@ async function getPriorityData() {
       }
 
       const score = reasons.reduce((s, r) => s + r.weight, 0);
-      return { ...c, reasons, score };
+      const recommendation = recByClient.get(c.slug)?.recommendation || null;
+      return { ...c, reasons, score, recommendation };
     })
     .filter((r) => r.score > 0)
     .sort((a, b) => b.score - a.score);
@@ -135,6 +139,22 @@ export default async function PriorityPage() {
                     </p>
                   ))}
                 </div>
+                {r.recommendation && (
+                  <div
+                    style={{
+                      marginTop: 12,
+                      paddingTop: 12,
+                      borderTop: "1px solid #eee",
+                      fontSize: 13,
+                      color: "#111",
+                    }}
+                  >
+                    <span style={{ fontWeight: 800, color: "#cda158", fontSize: 10, letterSpacing: ".1em", textTransform: "uppercase" }}>
+                      Recommended Action
+                    </span>
+                    <p style={{ margin: "4px 0 0" }}>{r.recommendation}</p>
+                  </div>
+                )}
               </Link>
             ))}
           </div>

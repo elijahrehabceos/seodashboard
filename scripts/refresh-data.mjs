@@ -393,6 +393,87 @@ em dashes. This is for internal agency use, not client-facing.`;
   }
 }
 
+async function generatePriorityRecommendation(client) {
+  if (!ANTHROPIC_API_KEY) return;
+
+  const [{ data: keywords }, { data: ai }] = await Promise.all([
+    supabase.from("keyword_rankings").select("*").eq("client_slug", client.slug),
+    supabase.from("ai_visibility").select("*").eq("client_slug", client.slug),
+  ]);
+  const kws = keywords || [];
+  const aiRows = ai || [];
+
+  // Same flagging logic as the Priority Queue page — kept in sync manually
+  // since this runs server-side in a different process.
+  const reasons = [];
+  const primary = kws.find((k) => k.is_primary);
+  const primaryBest = primary ? primary.best_position_week ?? primary.position : null;
+  if (primary && (!primaryBest || primaryBest > 5)) {
+    reasons.push(`Primary keyword "${primary.keyword}" isn't in the Top 5 this week (currently #${primaryBest || "NR"}).`);
+  }
+  const biggestDrop = kws.filter((k) => k.position_change < 0).sort((a, b) => a.position_change - b.position_change)[0];
+  if (biggestDrop && biggestDrop.position_change <= -3) {
+    reasons.push(`"${biggestDrop.keyword}" dropped ${Math.abs(biggestDrop.position_change)} positions this week.`);
+  }
+  if (aiRows.length > 0 && aiRows.every((a) => !a.mentioned)) {
+    reasons.push(`Not mentioned on any tracked AI engine (${aiRows.map((a) => a.engine).join(", ")}).`);
+  }
+  const rankedCount = kws.filter((k) => k.position > 0).length;
+  if (kws.length > 0 && rankedCount / kws.length < 0.5) {
+    reasons.push(`Only ${rankedCount} of ${kws.length} tracked keywords are ranking at all.`);
+  }
+
+  if (reasons.length === 0) {
+    // Client is healthy — clear any stale recommendation so it drops off the queue.
+    await supabase.from("priority_recommendations").delete().eq("client_slug", client.slug);
+    return;
+  }
+
+  const score = reasons.length; // simple weight; matches page's rough ordering well enough
+  const prompt = `You are an SEO strategist writing a single, specific, actionable
+recommendation for an agency team member managing this client's SEO. Clinic:
+${client.clinic_name}. Here's what's flagged this week:
+${reasons.map((r) => `- ${r}`).join("\n")}
+
+Write ONE concrete next step (1-2 sentences) the team should actually do this
+week to address the most important issue above. Be specific (e.g. "refresh
+the GBP post cadence", "add 2 local backlinks", "check for a recent
+competitor GBP change"), not generic advice. Plain text, no markdown, no em
+dashes.`;
+
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 200,
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
+    const json = await res.json();
+    const recommendation = json?.content?.find((b) => b.type === "text")?.text?.trim();
+    if (!recommendation) return;
+
+    await supabase.from("priority_recommendations").upsert(
+      {
+        client_slug: client.slug,
+        score,
+        reasons: JSON.stringify(reasons),
+        recommendation,
+        generated_at: new Date().toISOString(),
+      },
+      { onConflict: "client_slug" }
+    );
+  } catch (err) {
+    console.error(`[priority rec fail] ${client.clinic_name}:`, err.message);
+  }
+}
+
 async function main() {
   let successCount = 0;
   let failCount = 0;
@@ -406,6 +487,7 @@ async function main() {
       const aiCount = await refreshAiVisibility(client);
       const lfCount = await refreshLocalPack(client);
       await generateInsight(client);
+      await generatePriorityRecommendation(client);
       console.log(
         `[ok] ${client.clinic_name}: ${kwCount} keywords, ${aiCount} AI engines, ${lfCount} local pack rows`
       );

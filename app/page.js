@@ -99,6 +99,15 @@ export default async function HomePage() {
               attention today and why.
             </div>
           </Link>
+
+          <Link href="/audit" className="rd-menu-card animate-fade-up" style={{ animationDelay: "0.35s" }}>
+            <div className="rd-menu-card-eyebrow">Onboarding Tool</div>
+            <div className="rd-menu-card-title">Site Audit</div>
+            <div className="rd-menu-card-desc">
+              Drop any URL, get a prioritized technical SEO punch list in
+              seconds, no manual audit needed.
+            </div>
+          </Link>
         </div>
 
         <div className="rd-divider">· · ·</div>
