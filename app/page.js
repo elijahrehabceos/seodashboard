@@ -82,17 +82,17 @@ export default async function HomePage() {
 
   return (
     <div className="rd-body">
-      <div className="rd-cover" style={{ minHeight: 420, alignItems: "flex-start", textAlign: "left", padding: "80px 64px" }}>
-        <div className="rd-orbit-dot"></div>
+      <div className="rd-cover">
         <div className="rd-cover-tl"></div><div className="rd-cover-tr"></div><div className="rd-cover-bl"></div><div className="rd-cover-br"></div>
         <div style={{ maxWidth: 640, position: "relative", zIndex: 2 }}>
-          <div className="rd-kicker">
+          <div className="rd-kicker" style={{ justifyContent: "center" }}>
             <span className="rd-kicker-line"></span>
             <span className="rd-kicker-text">Rehab CEOs Digital Marketing</span>
+            <span className="rd-kicker-line"></span>
           </div>
-          <div className="rd-hero-title">SEO Dashboard</div>
-          <p className="rd-hero-sub">Live rankings, AI visibility, and local pack performance across the full client roster.</p>
-          <div className="rd-hero-meta">Refreshed Daily</div>
+          <div className="rd-hero-title" style={{ textAlign: "center" }}>SEO Dashboard</div>
+          <p className="rd-hero-sub" style={{ textAlign: "center" }}>Live rankings, AI visibility, and local pack performance across the full client roster.</p>
+          <div className="rd-hero-meta" style={{ textAlign: "center" }}>Refreshed Daily</div>
         </div>
       </div>
 
