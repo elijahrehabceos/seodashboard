@@ -101,6 +101,8 @@ async function snapshotAndGetPrevious(client, mappedKeywords, code) {
   const prevMap = new Map((prevRows || []).map((r) => [`${r.keyword}::${r.site_engine_id}`, r.position]));
   return { prevMap, prevLabel: prev.label };
 }
+
+async function fetchGoogleRating(client) {
   if (!LOCAL_FALCON_KEY) return null;
   try {
     const body = new URLSearchParams({ api_key: LOCAL_FALCON_KEY, query: client.clinic_name });
