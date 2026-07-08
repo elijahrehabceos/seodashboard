@@ -12,10 +12,11 @@ export async function GET(req, { params }) {
   }
 
   try {
-    const publicUrl = await generateReportForClient(client);
-    // Redirect straight to the generated file so clicking the button
-    // opens/downloads the report immediately.
-    return Response.redirect(publicUrl, 302);
+    const { html } = await generateReportForClient(client);
+    return new Response(html, {
+      status: 200,
+      headers: { "Content-Type": "text/html; charset=utf-8" },
+    });
   } catch (err) {
     console.error(err);
     return Response.json({ error: "Report generation failed", details: err.message }, { status: 500 });

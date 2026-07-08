@@ -535,7 +535,7 @@ ${localPackSection}
   );
   if (dbError) throw dbError;
 
-  return urlData.publicUrl;
+  return { html, publicUrl: urlData.publicUrl };
 }
 
 export { generateReportForClient };
@@ -553,8 +553,8 @@ async function main() {
   let fail = 0;
   for (const client of targets) {
     try {
-      const url = await generateReportForClient(client);
-      console.log(`[ok] ${client.clinic_name}: ${url}`);
+      const { publicUrl } = await generateReportForClient(client);
+      console.log(`[ok] ${client.clinic_name}: ${publicUrl}`);
       ok++;
     } catch (err) {
       console.error(`[fail] ${client.clinic_name}:`, err.message);
