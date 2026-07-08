@@ -516,11 +516,11 @@ ${localPackSection}
   // Upload to Supabase Storage
   const storagePath = `${client.slug}/${code}.html`;
   const { error: uploadError } = await supabase.storage
-    .from("reports")
+    .from("report")
     .upload(storagePath, html, { contentType: "text/html", upsert: true });
   if (uploadError) throw uploadError;
 
-  const { data: urlData } = supabase.storage.from("reports").getPublicUrl(storagePath);
+  const { data: urlData } = supabase.storage.from("report").getPublicUrl(storagePath);
 
   const { error: dbError } = await supabase.from("monthly_reports").upsert(
     {
