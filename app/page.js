@@ -29,17 +29,12 @@ async function getSpotlights() {
     .in("slug", slugs);
   const nameBySlug = new Map((clients || []).map((c) => [c.slug, c.clinic_name]));
 
-  // Wins: real, believable movement only. A 20+ position jump in a single
-  // week is almost always a newly onboarded client's first real check-in,
-  // not an actual ranking win, so those are excluded.
   const wins = keywords
     .filter((k) => k.position_change > 0 && k.position_change < 20)
     .sort((a, b) => b.position_change - a.position_change)
     .slice(0, 4)
     .map((k) => ({ ...k, clinic_name: nameBySlug.get(k.client_slug) }));
 
-  // Needs attention: not about drops — about who's currently ranking
-  // lowest, with a concrete next step for each.
   const needsAttention = keywords
     .filter((k) => k.position && k.position > 5)
     .sort((a, b) => b.position - a.position)
@@ -49,146 +44,124 @@ async function getSpotlights() {
   return { wins, needsAttention };
 }
 
+const SECTIONS = [
+  {
+    href: "/clients",
+    title: "Client Directory",
+    desc: "Browse every client, search by clinic or owner, and drill into rankings, AI visibility, and local pack performance.",
+    tag: "55 Clients",
+  },
+  {
+    href: "/kpi",
+    title: "SEO Team KPI",
+    desc: "Track how many clients are ranking in the Top 5 for their primary local keyword, at a glance.",
+    tag: "Team Performance",
+  },
+  {
+    href: "/priority",
+    title: "Priority Queue",
+    desc: "Skip scrolling all 55 clients, see who actually needs attention today and why.",
+    tag: "Where To Focus",
+  },
+  {
+    href: "/audit",
+    title: "Site Audit",
+    desc: "Drop any URL, get a prioritized technical SEO punch list in seconds.",
+    tag: "Onboarding Tool",
+  },
+  {
+    href: "/blog-generator",
+    title: "Blog Generator",
+    desc: "900-1200 word posts with real internal links and live-searched external sources.",
+    tag: "Content Tool",
+  },
+];
+
 export default async function HomePage() {
   const { wins, needsAttention } = await getSpotlights();
 
   return (
     <div className="rd-body">
-      <div className="rd-cover">
+      <div className="rd-cover" style={{ minHeight: 420, alignItems: "flex-start", textAlign: "left", padding: "80px 64px" }}>
         <div className="rd-orbit-dot"></div>
         <div className="rd-cover-tl"></div><div className="rd-cover-tr"></div><div className="rd-cover-bl"></div><div className="rd-cover-br"></div>
-        <div className="rd-cover-brand"><img src="/rehabceos-logo.webp" alt="Rehab CEOs" style={{ height: 30, width: "auto" }} /></div>
-        <div className="rd-cover-eyebrow">Digital Marketing</div>
-        <div className="rd-cover-title">SEO Dashboard</div>
-        <div className="rd-cover-domain">Live rankings · AI visibility · Local pack</div>
-        <div className="rd-cover-badges"><div className="rd-cbadge">Refreshed Daily</div></div>
+        <div style={{ maxWidth: 640, position: "relative", zIndex: 2 }}>
+          <div className="rd-kicker">
+            <span className="rd-kicker-line"></span>
+            <span className="rd-kicker-text">Rehab CEOs Digital Marketing</span>
+          </div>
+          <div className="rd-hero-title">SEO Dashboard</div>
+          <p className="rd-hero-sub">Live rankings, AI visibility, and local pack performance across the full client roster.</p>
+          <div className="rd-hero-meta">Refreshed Daily</div>
+        </div>
       </div>
 
-      <div className="rd-page" style={{ maxWidth: 900 }}>
-        <div className="rd-sh">
-          <div className="rd-sh-left">
-            <span className="rd-sh-num">Menu</span>
-            <span className="rd-sh-title">Where to?</span>
-          </div>
+      <div className="rd-page" style={{ maxWidth: 820, paddingTop: 72 }}>
+        <div className="rd-section-label">Navigate</div>
+        <div className="rd-index-list">
+          {SECTIONS.map((s, i) => (
+            <Link key={s.href} href={s.href} className="rd-index-row animate-fade-up" style={{ animationDelay: `${i * 0.05}s` }}>
+              <span className="rd-index-num">{String(i + 1).padStart(2, "0")}</span>
+              <div className="rd-index-body">
+                <div className="rd-index-title">{s.title}</div>
+                <div className="rd-index-desc">{s.desc}</div>
+              </div>
+              <span className="rd-index-tag">{s.tag}</span>
+              <svg className="rd-index-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          ))}
         </div>
-
-        <div className="rd-menu-grid">
-          <Link href="/clients" className="rd-menu-card animate-fade-up" style={{ animationDelay: "0.05s" }}>
-            <div className="rd-menu-card-eyebrow">55 Clients</div>
-            <div className="rd-menu-card-title">Client Directory</div>
-            <div className="rd-menu-card-desc">
-              Browse every client, search by clinic or owner, and drill into
-              keyword rankings, AI visibility, and local pack performance for
-              each one.
-            </div>
-          </Link>
-
-          <Link href="/kpi" className="rd-menu-card animate-fade-up" style={{ animationDelay: "0.15s" }}>
-            <div className="rd-menu-card-eyebrow">Team Performance</div>
-            <div className="rd-menu-card-title">SEO Team KPI</div>
-            <div className="rd-menu-card-desc">
-              Track how many clients are ranking in the Top 5 for their
-              primary local keyword, at a glance.
-            </div>
-          </Link>
-
-          <Link href="/priority" className="rd-menu-card animate-fade-up" style={{ animationDelay: "0.25s" }}>
-            <div className="rd-menu-card-eyebrow">Where To Focus</div>
-            <div className="rd-menu-card-title">Priority Queue</div>
-            <div className="rd-menu-card-desc">
-              Skip scrolling all 55 clients, see who actually needs
-              attention today and why.
-            </div>
-          </Link>
-
-          <Link href="/audit" className="rd-menu-card animate-fade-up" style={{ animationDelay: "0.35s" }}>
-            <div className="rd-menu-card-eyebrow">Onboarding Tool</div>
-            <div className="rd-menu-card-title">Site Audit</div>
-            <div className="rd-menu-card-desc">
-              Drop any URL, get a prioritized technical SEO punch list in
-              seconds, no manual audit needed.
-            </div>
-          </Link>
-
-          <Link href="/blog-generator" className="rd-menu-card animate-fade-up" style={{ animationDelay: "0.45s" }}>
-            <div className="rd-menu-card-eyebrow">Content Tool</div>
-            <div className="rd-menu-card-title">Blog Generator</div>
-            <div className="rd-menu-card-desc">
-              900-1200 word posts with real internal links pulled from the
-              client&apos;s own site and live-searched external sources.
-            </div>
-          </Link>
-        </div>
-
-        <div className="rd-divider">· · ·</div>
 
         {(wins.length > 0 || needsAttention.length > 0) && (
-          <div style={{ background: "#fff", border: "1px solid #e8e8e8", borderRadius: 12, padding: "24px 24px 8px", marginBottom: 28 }}>
-            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: ".1em", color: "#999", textTransform: "uppercase", marginBottom: 4 }}>
-              This Week At A Glance
-            </div>
+          <div style={{ marginTop: 72, marginBottom: 16 }}>
+            <div className="rd-section-label">This Week At A Glance</div>
             <MovementChart wins={wins} needsAttention={needsAttention} />
           </div>
         )}
 
-        <div className="rd-sh">
-          <div className="rd-sh-left">
-            <span className="rd-sh-num">01</span>
-            <span className="rd-sh-title">Weekly Wins</span>
-          </div>
-          <span className="rd-sh-badge">This Week</span>
+        <div style={{ marginTop: 72 }}>
+          <div className="rd-section-label">Weekly Wins</div>
+          {wins.length === 0 ? (
+            <p style={{ color: "#999", fontSize: 13, marginBottom: 40 }}>No ranking movement recorded yet.</p>
+          ) : (
+            <div className="rd-note-list">
+              {wins.map((w, i) => (
+                <div key={i} className="rd-note-row animate-fade-up" style={{ animationDelay: `${0.05 * i}s` }}>
+                  <span className="rd-note-dot green"></span>
+                  <div>
+                    <div className="rd-note-title">{w.clinic_name}</div>
+                    <div className="rd-note-body">
+                      Climbed <strong>{w.position_change} positions</strong> for &ldquo;{w.keyword}&rdquo;, now sitting at <strong>#{w.position}</strong>.
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        {wins.length === 0 ? (
-          <p style={{ color: "#999", fontSize: 13, marginBottom: 40 }}>
-            No ranking movement recorded yet.
-          </p>
-        ) : (
-          <div style={{ display: "grid", gap: 12, marginBottom: 48 }}>
-            {wins.map((w, i) => (
-              <div key={i} className="rd-hi-card animate-fade-up" style={{ marginBottom: 0, animationDelay: `${0.05 * i}s` }}>
-                <div className="rd-hi-label green">
-                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8l5-5 5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  {w.clinic_name}
+        <div style={{ marginTop: 56 }}>
+          <div className="rd-section-label">Needs Attention</div>
+          {needsAttention.length === 0 ? (
+            <p style={{ color: "#999", fontSize: 13 }}>Every tracked keyword is currently in a strong position.</p>
+          ) : (
+            <div className="rd-note-list">
+              {needsAttention.map((d, i) => (
+                <div key={i} className="rd-note-row animate-fade-up" style={{ animationDelay: `${0.05 * i}s` }}>
+                  <span className="rd-note-dot gold"></span>
+                  <div>
+                    <div className="rd-note-title">{d.clinic_name}</div>
+                    <div className="rd-note-body">
+                      Currently at <strong>#{d.position}</strong> for &ldquo;{d.keyword}&rdquo;. {suggestionFor(d.position)}
+                    </div>
+                  </div>
                 </div>
-                <p>
-                  Climbed <strong>{w.position_change} positions</strong> for
-                  &ldquo;{w.keyword}&rdquo;, now sitting at{" "}
-                  <strong>#{w.position}</strong>.
-                </p>
-              </div>
-            ))}
-          </div>
-        )}
-
-        <div className="rd-sh">
-          <div className="rd-sh-left">
-            <span className="rd-sh-num">02</span>
-            <span className="rd-sh-title">Needs Attention</span>
-          </div>
-          <span className="rd-sh-badge">Opportunity</span>
+              ))}
+            </div>
+          )}
         </div>
-
-        {needsAttention.length === 0 ? (
-          <p style={{ color: "#999", fontSize: 13, marginBottom: 40 }}>
-            Every tracked keyword is currently in a strong position.
-          </p>
-        ) : (
-          <div style={{ display: "grid", gap: 12, marginBottom: 48 }}>
-            {needsAttention.map((d, i) => (
-              <div key={i} className="rd-hi-card animate-fade-up" style={{ marginBottom: 0, animationDelay: `${0.05 * i}s` }}>
-                <div className="rd-hi-label gold">
-                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5"/><path d="M8 5v4M8 11v.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-                  {d.clinic_name}
-                </div>
-                <p>
-                  Currently at <strong>#{d.position}</strong> for &ldquo;{d.keyword}&rdquo;.{" "}
-                  {suggestionFor(d.position)}
-                </p>
-              </div>
-            ))}
-          </div>
-        )}
 
         <div className="rd-report-footer">
           <div className="rd-ft-brand">Powered by <span>Rehab CEOs</span></div>
