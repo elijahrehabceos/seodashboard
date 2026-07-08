@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import ClientChat from "./ClientChat";
+import KeywordPositionChart from "./KeywordPositionChart";
 
 export const revalidate = 3600;
 
@@ -148,6 +149,15 @@ export default async function ClientPage({ params }) {
         )}
 
         <div className="rd-divider">· · ·</div>
+
+        {mappedKeywords.length > 0 && (
+          <>
+            <div className="rd-sh"><div className="rd-sh-left"><span className="rd-sh-num">Chart</span><span className="rd-sh-title">Ranking Overview</span></div><span className="rd-sh-badge">Top 12</span></div>
+            <div style={{ background: "#fff", border: "1px solid #e8e8e8", borderRadius: 12, padding: "20px 24px", marginBottom: 48 }}>
+              <KeywordPositionChart keywords={mappedKeywords} />
+            </div>
+          </>
+        )}
 
         <div className="rd-sh"><div className="rd-sh-left"><span className="rd-sh-num">02</span><span className="rd-sh-title">Good Keywords</span></div><span className="rd-sh-badge">Page 1</span></div>
         {goodKeywords.length === 0 ? (

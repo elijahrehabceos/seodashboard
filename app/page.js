@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import MovementChart from "./MovementChart";
 
 export const revalidate = 3600;
 
@@ -120,6 +121,15 @@ export default async function HomePage() {
         </div>
 
         <div className="rd-divider">· · ·</div>
+
+        {(wins.length > 0 || needsAttention.length > 0) && (
+          <div style={{ background: "#fff", border: "1px solid #e8e8e8", borderRadius: 12, padding: "24px 24px 8px", marginBottom: 28 }}>
+            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: ".1em", color: "#999", textTransform: "uppercase", marginBottom: 4 }}>
+              This Week At A Glance
+            </div>
+            <MovementChart wins={wins} needsAttention={needsAttention} />
+          </div>
+        )}
 
         <div className="rd-sh">
           <div className="rd-sh-left">

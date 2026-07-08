@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import TeamDistributionChart from "./TeamDistributionChart";
 
 export const revalidate = 3600;
 
@@ -84,6 +85,13 @@ export default async function KpiPage() {
             <div className={`rd-kpi-val ${isGood10 ? "g" : "gold"}`}>{pct10}%</div>
             <div className="rd-kpi-sub">Across all clients</div>
           </div>
+        </div>
+
+        <div style={{ background: "#fff", border: "1px solid #e8e8e8", borderRadius: 12, padding: "24px 24px 8px", marginBottom: 28 }}>
+          <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: ".1em", color: "#999", textTransform: "uppercase", marginBottom: 4 }}>
+            Team Position Distribution
+          </div>
+          <TeamDistributionChart rows={rows} />
         </div>
 
         <div className="rd-divider">· · ·</div>
