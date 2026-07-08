@@ -18,12 +18,15 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 const LOCAL_FALCON_KEY = process.env.LOCAL_FALCON_API_KEY;
 
-if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY || !ANTHROPIC_API_KEY) {
-  console.error("Missing required env vars for report generation.");
-  process.exit(1);
-}
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+// IMPORTANT: no env-var validation or process.exit() at module load time.
+// Next.js imports this module during build-time static analysis (even
+// though it never actually runs any code then), and a top-level exit there
+// kills the entire Vercel build. Real validation happens lazily, only when
+// a report is actually being generated (see generateReportForClient below).
+const supabase = createClient(
+  SUPABASE_URL || "https://placeholder.supabase.co",
+  SUPABASE_SERVICE_KEY || "placeholder-key"
+);
 
 function monthLabel(date = new Date()) {
   return date.toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
@@ -205,6 +208,11 @@ function renderLocalPackCard(l) {
 }
 
 async function generateReportForClient(client) {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY || !ANTHROPIC_API_KEY) {
+    throw new Error(
+      "Missing required env vars (SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, ANTHROPIC_API_KEY). Check they're set in Vercel (for the on-demand button) or GitHub Actions secrets (for the batch job)."
+    );
+  }
   const { keywords, ai, local, engines } = await getClientReportData(client);
   const label = monthLabel();
   const code = monthCode();
