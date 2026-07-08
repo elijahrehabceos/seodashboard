@@ -99,8 +99,9 @@ ${notes ? `Additional notes from the team: ${notes}` : ""}
 Requirements:
 - Length: 900 to 1200 words, no shorter, no longer
 - Structure: one H1 (the title), several H2s, H3s where useful for sub-points
-- The main keyword must appear naturally in the title, meta description, and
-  a few times in the body (not stuffed)
+- The main keyword must appear naturally in the title and meta description,
+  in 1-2 of the headers (H2/H3), and 4-5 times total across the body text.
+  Natural placement, never forced or stuffed beyond that count.
 - Include as many INTERNAL links as make sense contextually, using ONLY these
   real pages from the client's own site (pick whichever are actually
   relevant to the topic, don't force irrelevant ones):
