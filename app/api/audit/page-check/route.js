@@ -23,6 +23,7 @@ async function safeFetch(url, opts = {}) {
 
 function runTechnicalChecks(url, html) {
   const $ = cheerio.load(html);
+  $('script:not([type="application/ld+json"]), style, noscript, template').remove(); // never treat JS/CSS as visible page content
   const checks = [];
 
   const title = $("title").first().text().trim();
@@ -77,6 +78,7 @@ function runTechnicalChecks(url, html) {
     severity: url.startsWith("https://") ? "pass" : "critical",
   });
 
+  $('script[type="application/ld+json"]').remove(); // now safe to strip — schema count already captured
   const bodyText = $("body").text().replace(/\s+/g, " ").trim();
   const wordCount = bodyText.split(" ").filter(Boolean).length;
   checks.push({
@@ -109,6 +111,23 @@ function findShortcodeArtifacts(bodyText) {
   return [...found].slice(0, 15);
 }
 
+async function checkOneLink(link, attempt = 0) {
+  const res = await safeFetch(link, { method: "HEAD" });
+  if (res.status === 429 && attempt < 2) {
+    await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
+    return checkOneLink(link, attempt + 1);
+  }
+  if (!res.ok && (res.status === 405 || res.status === null)) {
+    const retry = await safeFetch(link, { method: "GET" });
+    if (retry.status === 429 && attempt < 2) {
+      await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
+      return checkOneLink(link, attempt + 1);
+    }
+    return { url: link, status: retry.status, ok: retry.ok };
+  }
+  return { url: link, status: res.status, ok: res.ok };
+}
+
 async function checkLinks($, pageUrl) {
   const host = new URL(pageUrl).hostname;
   const links = new Set();
@@ -123,18 +142,21 @@ async function checkLinks($, pageUrl) {
   });
 
   const linkList = [...links].slice(0, MAX_LINKS_CHECKED_PER_PAGE);
-  const results = await Promise.all(
-    linkList.map(async (link) => {
-      const res = await safeFetch(link, { method: "HEAD" });
-      if (!res.ok && (res.status === 405 || res.status === null)) {
-        const retry = await safeFetch(link, { method: "GET" });
-        return { url: link, status: retry.status, ok: retry.ok };
-      }
-      return { url: link, status: res.status, ok: res.ok };
-    })
-  );
 
-  return results.filter((r) => !r.ok);
+  // Check a few at a time, not all at once — hitting a site with 20
+  // simultaneous requests is exactly what triggers its own rate limiter,
+  // which we'd otherwise misread as broken links.
+  const results = [];
+  const LINK_CHECK_CONCURRENCY = 3;
+  for (let i = 0; i < linkList.length; i += LINK_CHECK_CONCURRENCY) {
+    const batch = linkList.slice(i, i + LINK_CHECK_CONCURRENCY);
+    const batchResults = await Promise.all(batch.map((link) => checkOneLink(link)));
+    results.push(...batchResults);
+  }
+
+  // A 429 that survived retries means the site is rate-limiting us, not that
+  // the link is broken — don't report those as broken links at all.
+  return results.filter((r) => !r.ok && r.status !== 429);
 }
 
 async function reviewContentWithClaude(apiKey, pageUrl, bodyText) {

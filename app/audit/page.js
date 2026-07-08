@@ -19,7 +19,9 @@ function PageCard({ page }) {
   if (page.error) {
     return (
       <div className="rd-hi-card" style={{ borderLeftColor: "#dc2626" }}>
-        <div style={{ fontWeight: 700, fontSize: 13 }}>{page.url}</div>
+        <a href={page.url} target="_blank" rel="noreferrer" style={{ fontWeight: 700, fontSize: 13, color: "#111" }}>
+          {page.url} ↗
+        </a>
         <p style={{ color: "#dc2626" }}>{page.error}</p>
       </div>
     );
@@ -46,9 +48,26 @@ function PageCard({ page }) {
         }}
       >
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontWeight: 700, fontSize: 13.5, color: "#111", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-            {page.url}
-          </div>
+          <a
+            href={page.url}
+            target="_blank"
+            rel="noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              fontWeight: 700,
+              fontSize: 13.5,
+              color: "#111",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              display: "block",
+              textDecoration: "none",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "#cda158")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "#111")}
+          >
+            {page.url} ↗
+          </a>
           <div style={{ fontSize: 12, color: "#999", marginTop: 3 }}>
             {critical > 0 && <span style={{ color: "#dc2626", fontWeight: 700, marginRight: 10 }}>{critical} critical</span>}
             {warning > 0 && <span style={{ color: "#cda158", fontWeight: 700, marginRight: 10 }}>{warning} warning</span>}
@@ -83,7 +102,10 @@ function PageCard({ page }) {
               </div>
               {page.brokenLinks.map((l, i) => (
                 <div key={i} style={{ fontSize: 12.5, color: "#555", marginBottom: 4 }}>
-                  <span style={{ color: "#dc2626", fontWeight: 700 }}>{l.status || "unreachable"}</span> — {l.url}
+                  <span style={{ color: "#dc2626", fontWeight: 700 }}>{l.status || "unreachable"}</span> —{" "}
+                  <a href={l.url} target="_blank" rel="noreferrer" style={{ color: "#555" }}>
+                    {l.url}
+                  </a>
                 </div>
               ))}
             </div>
@@ -152,7 +174,7 @@ export default function AuditPage() {
 
       // Process with limited concurrency so we don't hammer the target site
       // or blow past API rate limits, but still work through large sites.
-      const CONCURRENCY = 4;
+      const CONCURRENCY = 2;
       let index = 0;
       async function worker() {
         while (index < pageList.length) {
