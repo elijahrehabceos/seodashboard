@@ -119,7 +119,9 @@ function PageCard({ page }) {
 export default function AuditPage() {
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState(null);
+  const [status, setStatus] = useState("");
+  const [pages, setPages] = useState([]); // discovered page URLs
+  const [results, setResults] = useState({}); // url -> result
   const [error, setError] = useState(null);
 
   async function runAudit(e) {
@@ -127,25 +129,70 @@ export default function AuditPage() {
     if (!url.trim() || loading) return;
     setLoading(true);
     setError(null);
-    setResult(null);
+    setResults({});
+    setPages([]);
+    setStatus("Finding pages...");
+
     try {
-      const res = await fetch("/api/audit", {
+      const discoverRes = await fetch("/api/audit/discover", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url }),
       });
-      const json = await res.json();
-      if (!res.ok) {
-        setError(json.error || "Something went wrong");
-      } else {
-        setResult(json);
+      const discoverJson = await discoverRes.json();
+      if (!discoverRes.ok) {
+        setError(discoverJson.error || "Couldn't discover pages on that site.");
+        setLoading(false);
+        return;
       }
+
+      const pageList = discoverJson.pages;
+      setPages(pageList);
+      setStatus(`Found ${pageList.length} pages via ${discoverJson.source}. Scanning...`);
+
+      // Process with limited concurrency so we don't hammer the target site
+      // or blow past API rate limits, but still work through large sites.
+      const CONCURRENCY = 4;
+      let index = 0;
+      async function worker() {
+        while (index < pageList.length) {
+          const myIndex = index++;
+          const pageUrl = pageList[myIndex];
+          try {
+            const res = await fetch("/api/audit/page-check", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ url: pageUrl }),
+            });
+            const json = await res.json();
+            setResults((prev) => ({ ...prev, [pageUrl]: json }));
+          } catch {
+            setResults((prev) => ({ ...prev, [pageUrl]: { url: pageUrl, error: "Request failed" } }));
+          }
+        }
+      }
+      await Promise.all(Array.from({ length: CONCURRENCY }, worker));
+      setStatus("");
     } catch {
       setError("Something went wrong reaching that URL.");
     } finally {
       setLoading(false);
     }
   }
+
+  const scannedPages = pages.map((p) => results[p]).filter(Boolean);
+  const completedCount = scannedPages.length;
+  const totals = scannedPages.reduce(
+    (acc, p) => {
+      if (p.error) return acc;
+      acc.critical += p.checks.filter((c) => c.severity === "critical").length;
+      acc.warning += p.checks.filter((c) => c.severity === "warning").length;
+      acc.brokenLinks += p.brokenLinks?.length || 0;
+      acc.shortcodeArtifacts += p.shortcodeArtifacts?.length || 0;
+      return acc;
+    },
+    { critical: 0, warning: 0, brokenLinks: 0, shortcodeArtifacts: 0 }
+  );
 
   return (
     <div className="rd-body">
@@ -197,7 +244,7 @@ export default function AuditPage() {
         </form>
         {loading && (
           <p style={{ color: "#999", fontSize: 12.5, marginBottom: 24 }}>
-            Crawling up to 8 pages and reviewing content, this can take a minute or two.
+            {status || "Scanning..."} {pages.length > 0 && `(${completedCount} of ${pages.length} done)`}
           </p>
         )}
 
@@ -207,32 +254,32 @@ export default function AuditPage() {
           </div>
         )}
 
-        {result && (
+        {pages.length > 0 && (
           <>
             <div className="rd-kpi-grid">
               <div className="rd-kpi">
-                <div className="rd-kpi-lbl">Pages Scanned</div>
-                <div className="rd-kpi-val">{result.pagesScanned}</div>
-                <div className="rd-kpi-sub">via {result.pageSource}</div>
+                <div className="rd-kpi-lbl">Pages Found</div>
+                <div className="rd-kpi-val">{completedCount} / {pages.length}</div>
+                <div className="rd-kpi-sub">{loading ? "Scanning..." : "Scan complete"}</div>
               </div>
               <div className="rd-kpi">
                 <div className="rd-kpi-lbl">Critical Issues</div>
-                <div className="rd-kpi-val" style={{ color: result.totals.critical > 0 ? "#dc2626" : "#16a34a" }}>
-                  {result.totals.critical}
+                <div className="rd-kpi-val" style={{ color: totals.critical > 0 ? "#dc2626" : "#16a34a" }}>
+                  {totals.critical}
                 </div>
-                <div className="rd-kpi-sub">Across all pages</div>
+                <div className="rd-kpi-sub">So far</div>
               </div>
               <div className="rd-kpi">
                 <div className="rd-kpi-lbl">Broken Links</div>
-                <div className="rd-kpi-val" style={{ color: result.totals.brokenLinks > 0 ? "#dc2626" : "#16a34a" }}>
-                  {result.totals.brokenLinks}
+                <div className="rd-kpi-val" style={{ color: totals.brokenLinks > 0 ? "#dc2626" : "#16a34a" }}>
+                  {totals.brokenLinks}
                 </div>
-                <div className="rd-kpi-sub">Found across all pages</div>
+                <div className="rd-kpi-sub">Found so far</div>
               </div>
               <div className="rd-kpi">
                 <div className="rd-kpi-lbl">Shortcode Errors</div>
-                <div className="rd-kpi-val" style={{ color: result.totals.shortcodeArtifacts > 0 ? "#dc2626" : "#16a34a" }}>
-                  {result.totals.shortcodeArtifacts}
+                <div className="rd-kpi-val" style={{ color: totals.shortcodeArtifacts > 0 ? "#dc2626" : "#16a34a" }}>
+                  {totals.shortcodeArtifacts}
                 </div>
                 <div className="rd-kpi-sub">Broken template artifacts</div>
               </div>
@@ -241,9 +288,15 @@ export default function AuditPage() {
             <div className="rd-divider">· · ·</div>
 
             <div>
-              {result.scannedPages.map((page, i) => (
-                <PageCard key={i} page={page} />
-              ))}
+              {pages.map((pageUrl, i) =>
+                results[pageUrl] ? (
+                  <PageCard key={i} page={results[pageUrl]} />
+                ) : (
+                  <div key={i} style={{ background: "#fafafa", border: "1px solid #eee", borderRadius: 12, padding: "16px 20px", marginBottom: 16, fontSize: 13, color: "#aaa" }}>
+                    {pageUrl} — waiting to scan...
+                  </div>
+                )
+              )}
             </div>
 
             <div className="rd-report-footer">
