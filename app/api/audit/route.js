@@ -1,155 +1,202 @@
 import * as cheerio from "cheerio";
 
-export const maxDuration = 60;
+export const maxDuration = 300; // full-site scans take longer than a single page check
+
+const MAX_PAGES = 8; // cap to keep scan time and Claude usage reasonable
+const MAX_LINKS_CHECKED_PER_PAGE = 20;
 
 async function safeFetch(url, opts = {}) {
   try {
     const res = await fetch(url, { redirect: "follow", ...opts });
-    const text = await res.text();
+    const text = opts.method === "HEAD" ? "" : await res.text();
     return { ok: res.ok, status: res.status, finalUrl: res.url, text };
   } catch (err) {
     return { ok: false, status: null, finalUrl: url, text: "", error: err.message };
   }
 }
 
-function runChecks(url, html, robots, sitemap) {
+async function discoverPages(origin, homepageHtml, homepageUrl) {
+  const sitemap = await safeFetch(`${origin}/sitemap.xml`);
+  if (sitemap.ok && sitemap.text.includes("<loc>")) {
+    const $ = cheerio.load(sitemap.text, { xmlMode: true });
+    const urls = $("loc").map((i, el) => $(el).text().trim()).get().filter(Boolean);
+    if (urls.length) return { pages: urls.slice(0, MAX_PAGES), source: "sitemap.xml" };
+  }
+
+  const $ = cheerio.load(homepageHtml);
+  const host = new URL(homepageUrl).hostname;
+  const found = new Set([homepageUrl]);
+  $("a[href]").each((i, el) => {
+    if (found.size >= MAX_PAGES) return;
+    const href = $(el).attr("href");
+    if (!href || href.startsWith("#") || href.startsWith("mailto:") || href.startsWith("tel:")) return;
+    try {
+      const abs = new URL(href, homepageUrl);
+      abs.hash = "";
+      if (abs.hostname === host) found.add(abs.toString());
+    } catch {}
+  });
+  return { pages: [...found].slice(0, MAX_PAGES), source: "homepage links" };
+}
+
+function runTechnicalChecks(url, html) {
   const $ = cheerio.load(html);
   const checks = [];
 
-  // Title
   const title = $("title").first().text().trim();
   checks.push({
     id: "title",
     label: "Title tag",
-    pass: title.length > 0 && title.length <= 60,
     detail: title ? `"${title}" (${title.length} chars)` : "Missing entirely",
     severity: !title ? "critical" : title.length > 60 ? "warning" : "pass",
   });
 
-  // Meta description
   const metaDesc = $('meta[name="description"]').attr("content") || "";
   checks.push({
     id: "meta_description",
     label: "Meta description",
-    pass: metaDesc.length > 0 && metaDesc.length <= 160,
     detail: metaDesc ? `${metaDesc.length} chars` : "Missing entirely",
     severity: !metaDesc ? "critical" : metaDesc.length > 160 ? "warning" : "pass",
   });
 
-  // H1
   const h1s = $("h1");
   checks.push({
     id: "h1",
     label: "H1 heading",
-    pass: h1s.length === 1,
-    detail: h1s.length === 0 ? "No H1 found" : h1s.length === 1 ? `"${$(h1s[0]).text().trim()}"` : `${h1s.length} H1 tags found (should be 1)`,
+    detail:
+      h1s.length === 0
+        ? "No H1 found"
+        : h1s.length === 1
+        ? `"${$(h1s[0]).text().trim()}"`
+        : `${h1s.length} H1 tags found (should be 1)`,
     severity: h1s.length === 0 ? "critical" : h1s.length > 1 ? "warning" : "pass",
   });
 
-  // Viewport (mobile-friendliness signal)
   const viewport = $('meta[name="viewport"]').attr("content");
   checks.push({
     id: "viewport",
     label: "Mobile viewport tag",
-    pass: !!viewport,
     detail: viewport || "Missing — page may not be mobile-optimized",
     severity: viewport ? "pass" : "critical",
   });
 
-  // Canonical
-  const canonical = $('link[rel="canonical"]').attr("href");
-  checks.push({
-    id: "canonical",
-    label: "Canonical tag",
-    pass: !!canonical,
-    detail: canonical || "Missing",
-    severity: canonical ? "pass" : "warning",
-  });
-
-  // Schema markup
   const schemaBlocks = $('script[type="application/ld+json"]');
   checks.push({
     id: "schema",
     label: "Structured data (schema.org)",
-    pass: schemaBlocks.length > 0,
     detail: schemaBlocks.length > 0 ? `${schemaBlocks.length} JSON-LD block(s) found` : "No schema markup found",
     severity: schemaBlocks.length > 0 ? "pass" : "warning",
   });
 
-  // Image alt text
   const images = $("img");
   const missingAlt = images.filter((i, el) => !$(el).attr("alt")?.trim()).length;
   checks.push({
     id: "alt_text",
     label: "Image alt text",
-    pass: images.length === 0 || missingAlt === 0,
     detail: `${missingAlt} of ${images.length} images missing alt text`,
     severity: missingAlt === 0 ? "pass" : missingAlt / Math.max(images.length, 1) > 0.5 ? "critical" : "warning",
   });
 
-  // HTTPS
   checks.push({
     id: "https",
     label: "HTTPS",
-    pass: url.startsWith("https://"),
-    detail: url.startsWith("https://") ? "Site is served over HTTPS" : "Site is NOT using HTTPS",
+    detail: url.startsWith("https://") ? "Served over HTTPS" : "NOT using HTTPS",
     severity: url.startsWith("https://") ? "pass" : "critical",
   });
 
-  // robots.txt
-  checks.push({
-    id: "robots",
-    label: "robots.txt",
-    pass: robots.ok,
-    detail: robots.ok
-      ? robots.text.toLowerCase().includes("disallow: /") && !robots.text.toLowerCase().includes("disallow: /$")
-        ? "Found, but check for accidental blanket 'Disallow: /' rules"
-        : "Found and looks reasonable"
-      : "Not found (returns non-200)",
-    severity: !robots.ok ? "warning" : robots.text.toLowerCase().includes("disallow: /\n") ? "critical" : "pass",
-  });
-
-  // sitemap.xml
-  checks.push({
-    id: "sitemap",
-    label: "sitemap.xml",
-    pass: sitemap.ok,
-    detail: sitemap.ok ? "Found" : "Not found at /sitemap.xml",
-    severity: sitemap.ok ? "pass" : "warning",
-  });
-
-  // Word count (thin content signal)
   const bodyText = $("body").text().replace(/\s+/g, " ").trim();
   const wordCount = bodyText.split(" ").filter(Boolean).length;
   checks.push({
     id: "word_count",
     label: "Page content length",
-    pass: wordCount >= 300,
     detail: `~${wordCount} words`,
     severity: wordCount < 150 ? "critical" : wordCount < 300 ? "warning" : "pass",
   });
 
-  // Internal links
-  const links = $("a[href]");
-  let internalCount = 0;
-  const host = new URL(url).hostname;
-  links.each((i, el) => {
+  return { checks, bodyText, $ };
+}
+
+function findShortcodeArtifacts(bodyText) {
+  const patterns = [
+    /\[[a-zA-Z][a-zA-Z0-9_\-]*(?:\s[^\[\]]*)?\]/g,
+    /\{\{[^{}]+\}\}/g,
+    /<\?php.*?\?>/gs,
+    /%[A-Z_]+%/g,
+  ];
+  const found = new Set();
+  for (const re of patterns) {
+    const matches = bodyText.match(re) || [];
+    matches.forEach((m) => found.add(m.trim()));
+  }
+  return [...found].slice(0, 15);
+}
+
+async function checkLinks($, pageUrl) {
+  const host = new URL(pageUrl).hostname;
+  const links = new Set();
+  $("a[href]").each((i, el) => {
     const href = $(el).attr("href");
-    if (!href || href.startsWith("#") || href.startsWith("mailto:") || href.startsWith("tel:")) return;
+    if (!href || href.startsWith("#") || href.startsWith("mailto:") || href.startsWith("tel:") || href.startsWith("javascript:")) return;
     try {
-      const abs = new URL(href, url);
-      if (abs.hostname === host) internalCount++;
+      const abs = new URL(href, pageUrl);
+      abs.hash = "";
+      links.add(abs.toString());
     } catch {}
   });
-  checks.push({
-    id: "internal_links",
-    label: "Internal linking",
-    pass: internalCount >= 3,
-    detail: `${internalCount} internal links found on this page`,
-    severity: internalCount < 3 ? "warning" : "pass",
-  });
 
-  return { checks, title, metaDesc, wordCount };
+  const linkList = [...links].slice(0, MAX_LINKS_CHECKED_PER_PAGE);
+  const results = await Promise.all(
+    linkList.map(async (link) => {
+      const res = await safeFetch(link, { method: "HEAD" });
+      if (!res.ok && (res.status === 405 || res.status === null)) {
+        const retry = await safeFetch(link, { method: "GET" });
+        return { url: link, status: retry.status, ok: retry.ok };
+      }
+      return { url: link, status: res.status, ok: res.ok };
+    })
+  );
+
+  return results.filter((r) => !r.ok);
+}
+
+async function reviewContentWithClaude(apiKey, pageUrl, bodyText) {
+  if (!apiKey) return null;
+  const sample = bodyText.slice(0, 3000);
+  const prompt = `You're proofreading the visible text content of a physical
+therapy / wellness clinic's website page (${pageUrl}) for a front-end content
+audit. Here's the extracted visible text:
+
+"""
+${sample}
+"""
+
+Check for: spelling errors, obvious typos, duplicated words/sentences,
+awkward or broken phrasing, and placeholder text that looks like it was
+never replaced (e.g. "Lorem ipsum", "Your Business Name Here", "Insert text").
+List specific issues found, quoting the exact problem text, with a fix
+suggestion for each. If nothing is wrong, just say "No content issues found."
+Plain text, no markdown, no em dashes. Keep it to the actual issues, don't
+pad with commentary.`;
+
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 500,
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
+    const json = await res.json();
+    return json?.content?.find((b) => b.type === "text")?.text?.trim() || null;
+  } catch {
+    return null;
+  }
 }
 
 export async function POST(req) {
@@ -160,66 +207,59 @@ export async function POST(req) {
     let url = rawUrl.trim();
     if (!/^https?:\/\//i.test(url)) url = `https://${url}`;
 
-    const page = await safeFetch(url);
-    if (!page.ok) {
-      return Response.json({ error: `Couldn't fetch that URL (status: ${page.status || "unreachable"})` }, { status: 400 });
+    const homepage = await safeFetch(url);
+    if (!homepage.ok) {
+      return Response.json({ error: `Couldn't fetch that URL (status: ${homepage.status || "unreachable"})` }, { status: 400 });
     }
 
-    const parsedUrl = new URL(page.finalUrl || url);
+    const finalUrl = homepage.finalUrl || url;
+    const parsedUrl = new URL(finalUrl);
     const origin = `${parsedUrl.protocol}//${parsedUrl.host}`;
-    const [robots, sitemap] = await Promise.all([
-      safeFetch(`${origin}/robots.txt`),
-      safeFetch(`${origin}/sitemap.xml`),
-    ]);
-
-    const { checks, title, metaDesc, wordCount } = runChecks(page.finalUrl || url, page.text, robots, sitemap);
-
-    const critical = checks.filter((c) => c.severity === "critical");
-    const warnings = checks.filter((c) => c.severity === "warning");
-    const passed = checks.filter((c) => c.severity === "pass");
-
-    // Claude synthesis: prioritized narrative + specific fixes
     const apiKey = process.env.ANTHROPIC_API_KEY;
-    let narrative = "";
-    if (apiKey) {
-      const prompt = `You are a senior technical SEO auditor. You just ran an automated
-scan of ${url} and found this:
 
-Title: ${title || "MISSING"}
-Meta description: ${metaDesc || "MISSING"}
-Checks: ${JSON.stringify(checks.map((c) => ({ label: c.label, severity: c.severity, detail: c.detail })))}
+    const { pages, source } = await discoverPages(origin, homepage.text, finalUrl);
 
-Write a short (4-6 sentence) executive summary for an agency team member,
-prioritizing the most important fixes first, specific and actionable, plain
-confident tone, no markdown, no em dashes. Physical therapy / wellness
-clinic client context.`;
-      try {
-        const res = await fetch("https://api.anthropic.com/v1/messages", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-api-key": apiKey,
-            "anthropic-version": "2023-06-01",
-          },
-          body: JSON.stringify({
-            model: "claude-sonnet-4-6",
-            max_tokens: 400,
-            messages: [{ role: "user", content: prompt }],
-          }),
-        });
-        const json = await res.json();
-        narrative = json?.content?.find((b) => b.type === "text")?.text?.trim() || "";
-      } catch {
-        narrative = "";
+    const scannedPages = [];
+    for (const pageUrl of pages) {
+      const page = pageUrl === finalUrl ? homepage : await safeFetch(pageUrl);
+      if (!page.ok) {
+        scannedPages.push({ url: pageUrl, error: `Couldn't fetch (status ${page.status || "unreachable"})` });
+        continue;
       }
+      const { checks, bodyText, $ } = runTechnicalChecks(page.finalUrl || pageUrl, page.text);
+      const [brokenLinks, contentIssues] = await Promise.all([
+        checkLinks($, page.finalUrl || pageUrl),
+        reviewContentWithClaude(apiKey, page.finalUrl || pageUrl, bodyText),
+      ]);
+      const shortcodeArtifacts = findShortcodeArtifacts(bodyText);
+
+      scannedPages.push({
+        url: page.finalUrl || pageUrl,
+        checks,
+        brokenLinks,
+        shortcodeArtifacts,
+        contentIssues,
+      });
     }
+
+    const totals = scannedPages.reduce(
+      (acc, p) => {
+        if (p.error) return acc;
+        acc.critical += p.checks.filter((c) => c.severity === "critical").length;
+        acc.warning += p.checks.filter((c) => c.severity === "warning").length;
+        acc.brokenLinks += p.brokenLinks?.length || 0;
+        acc.shortcodeArtifacts += p.shortcodeArtifacts?.length || 0;
+        return acc;
+      },
+      { critical: 0, warning: 0, brokenLinks: 0, shortcodeArtifacts: 0 }
+    );
 
     return Response.json({
-      url: page.finalUrl || url,
-      checks,
-      counts: { critical: critical.length, warning: warnings.length, pass: passed.length },
-      narrative,
-      wordCount,
+      startUrl: finalUrl,
+      pageSource: source,
+      pagesScanned: scannedPages.length,
+      totals,
+      scannedPages,
     });
   } catch (err) {
     console.error(err);
