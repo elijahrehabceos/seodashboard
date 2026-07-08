@@ -132,24 +132,53 @@ markdown code fences.]`;
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-6",
-        max_tokens: 4000,
+        max_tokens: 8000,
         messages: [{ role: "user", content: prompt }],
         tools: [{ type: "web_search_20250305", name: "web_search" }],
       }),
     });
     const json = await res.json();
+
+    if (!res.ok || json.type === "error") {
+      console.error("Anthropic API error:", JSON.stringify(json));
+      return Response.json(
+        { error: `Claude API error: ${json.error?.message || res.statusText || "unknown error"}` },
+        { status: 502 }
+      );
+    }
+
+    if (json.stop_reason === "max_tokens") {
+      console.error("Response was cut off by max_tokens before completing.");
+    }
+
     const fullText = (json?.content || [])
       .filter((b) => b.type === "text")
       .map((b) => b.text)
       .join("\n");
 
+    if (!fullText.trim()) {
+      console.error("Empty response from Claude. Full API response:", JSON.stringify(json).slice(0, 2000));
+      return Response.json(
+        { error: "Claude returned an empty response. This can happen if the web search step used up the token budget — try again, or simplify the notes." },
+        { status: 502 }
+      );
+    }
+
     const titleMatch = fullText.match(/TITLE:\s*(.+)/);
     const metaMatch = fullText.match(/META:\s*(.+)/);
     const bodyMatch = fullText.match(/BODY:\s*([\s\S]+)/);
 
+    if (!bodyMatch) {
+      console.error("Response didn't follow expected format. Raw text:", fullText.slice(0, 2000));
+      return Response.json(
+        { error: "Claude's response didn't follow the expected format. Raw output logged server-side — try again." },
+        { status: 502 }
+      );
+    }
+
     const title = titleMatch ? titleMatch[1].trim() : keyword;
     const metaDescription = metaMatch ? metaMatch[1].trim() : "";
-    const bodyHtml = bodyMatch ? bodyMatch[1].trim() : fullText;
+    const bodyHtml = bodyMatch[1].trim();
 
     const plainText = bodyHtml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
     const wordCount = plainText.split(" ").filter(Boolean).length;
