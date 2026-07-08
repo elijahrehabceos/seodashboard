@@ -79,6 +79,41 @@ This is a pay-per-use API, unlike a claude.ai subscription — cost is a small
 fraction of a cent per blurb or question, but it is real usage-based billing,
 so keep an eye on it if you add heavier use later.
 
+### 6. Monthly report generation
+
+Every client has a "Generate Monthly Report" button on their dashboard page,
+which produces the exact same branded HTML report you'd normally build by
+hand (cover page, Executive Summary, per-market Keyword Rankings, AI
+Visibility with gauge and query breakdown, Local Pack cards with heatmaps),
+with the narrative sections written by Claude from that client's live data.
+
+**Setup required:**
+
+1. Run `supabase/schema.sql` (adds the `reports` storage bucket and
+   `monthly_reports` table) if you haven't already
+2. Add these as **Vercel environment variables** (Project Settings →
+   Environment Variables) — these are needed server-side for on-demand
+   generation to work when you click the button:
+   - `SUPABASE_SERVICE_ROLE_KEY`
+   - `ANTHROPIC_API_KEY`
+3. For the **"Generate All Monthly Reports"** batch button on the Client
+   Directory page (runs all 55 through GitHub Actions instead of Vercel,
+   since that many Claude calls would exceed Vercel's time limit): add a
+   GitHub Personal Access Token (repo + workflow scope) as a Vercel env
+   var named `REPORTS_GITHUB_TOKEN`
+
+**Manually generating a single report from the command line:**
+
+```bash
+SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... ANTHROPIC_API_KEY=... \
+npm run generate-reports -- some-client-slug
+```
+
+Leave the slug off to generate for every client.
+
+Generated reports are stored in Supabase Storage (`reports` bucket) and
+tracked in the `monthly_reports` table, so past months stay available.
+
 ## Local development
 
 ```bash

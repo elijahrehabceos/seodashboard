@@ -1,0 +1,30 @@
+name: Generate monthly reports
+
+on:
+  workflow_dispatch:
+    inputs:
+      client_slug:
+        description: "Leave empty to generate for ALL clients, or enter one client slug for a single report"
+        required: false
+        default: ""
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        run: npm install @supabase/supabase-js
+
+      - name: Generate reports
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          LOCAL_FALCON_API_KEY: ${{ secrets.LOCAL_FALCON_API_KEY }}
+        run: node scripts/generate-report.mjs "${{ github.event.inputs.client_slug }}"

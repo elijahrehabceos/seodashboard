@@ -97,6 +97,25 @@ export default async function ClientPage({ params }) {
       </div>
 
       <div className="rd-page">
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 24 }}>
+          <a
+            href={`/api/report/${params.slug}`}
+            target="_blank"
+            rel="noreferrer"
+            style={{
+              display: "inline-block",
+              background: "#cda158",
+              color: "#000",
+              fontWeight: 700,
+              fontSize: 13,
+              padding: "10px 22px",
+              borderRadius: 30,
+              textDecoration: "none",
+            }}
+          >
+            Generate Monthly Report
+          </a>
+        </div>
         <div className="rd-sh"><div className="rd-sh-left"><span className="rd-sh-num">01</span><span className="rd-sh-title">Executive Summary</span></div><span className="rd-sh-badge">Live</span></div>
 
           <div className="rd-kpi-grid">

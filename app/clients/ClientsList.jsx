@@ -5,6 +5,18 @@ import Link from "next/link";
 
 export default function ClientsList({ clients }) {
   const [query, setQuery] = useState("");
+  const [batchStatus, setBatchStatus] = useState(null); // null | 'loading' | 'started' | 'error'
+
+  async function triggerBatch() {
+    setBatchStatus("loading");
+    try {
+      const res = await fetch("/api/report-batch", { method: "POST" });
+      const json = await res.json();
+      setBatchStatus(res.ok ? "started" : "error");
+    } catch {
+      setBatchStatus("error");
+    }
+  }
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -45,6 +57,36 @@ export default function ClientsList({ clients }) {
               boxShadow: "0 1px 6px rgba(0,0,0,.04)",
             }}
           />
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 32 }}>
+          <button
+            onClick={triggerBatch}
+            disabled={batchStatus === "loading"}
+            style={{
+              background: "#cda158",
+              color: "#000",
+              fontWeight: 700,
+              fontSize: 13,
+              padding: "10px 22px",
+              borderRadius: 30,
+              border: "none",
+              cursor: batchStatus === "loading" ? "default" : "pointer",
+              opacity: batchStatus === "loading" ? 0.6 : 1,
+            }}
+          >
+            {batchStatus === "loading" ? "Starting..." : "Generate All Monthly Reports"}
+          </button>
+          {batchStatus === "started" && (
+            <span style={{ fontSize: 13, color: "#16a34a", fontWeight: 600 }}>
+              Started — check the GitHub Actions tab, this takes a few minutes for all 55.
+            </span>
+          )}
+          {batchStatus === "error" && (
+            <span style={{ fontSize: 13, color: "#cda158", fontWeight: 600 }}>
+              Couldn&apos;t start batch generation. Check the GITHUB token is configured.
+            </span>
+          )}
         </div>
 
         {filtered.length === 0 ? (

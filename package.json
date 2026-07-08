@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "refresh": "node scripts/refresh-data.mjs"
+    "refresh": "node scripts/refresh-data.mjs",
+    "generate-reports": "node scripts/generate-report.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
