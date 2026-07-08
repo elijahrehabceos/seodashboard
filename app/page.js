@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import MovementChart from "./MovementChart";
 
 export const revalidate = 3600;
 
@@ -113,13 +112,6 @@ export default async function HomePage() {
             </Link>
           ))}
         </div>
-
-        {(wins.length > 0 || needsAttention.length > 0) && (
-          <div style={{ marginTop: 72, marginBottom: 16 }}>
-            <div className="rd-section-label">This Week At A Glance</div>
-            <MovementChart wins={wins} needsAttention={needsAttention} />
-          </div>
-        )}
 
         <div style={{ marginTop: 72 }}>
           <div className="rd-section-label">Weekly Wins</div>
