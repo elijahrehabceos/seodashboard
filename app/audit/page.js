@@ -124,12 +124,20 @@ function PageCard({ page }) {
             </div>
           )}
 
-          {hasContentIssues && (
+          {page.contentIssues && (
             <div>
-              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: ".1em", color: "#cda158", textTransform: "uppercase", marginBottom: 8 }}>
+              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: ".1em", color: hasContentIssues ? "#cda158" : "#16a34a", textTransform: "uppercase", marginBottom: 8 }}>
                 Content Review
               </div>
               <p style={{ fontSize: 13, color: "#444", lineHeight: 1.7, whiteSpace: "pre-line" }}>{page.contentIssues}</p>
+            </div>
+          )}
+          {!page.contentIssues && (
+            <div>
+              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: ".1em", color: "#999", textTransform: "uppercase", marginBottom: 8 }}>
+                Content Review
+              </div>
+              <p style={{ fontSize: 13, color: "#999" }}>Not available (Claude API key may not be configured).</p>
             </div>
           )}
         </div>
