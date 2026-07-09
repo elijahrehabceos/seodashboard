@@ -159,41 +159,37 @@ async function checkLinks($, pageUrl) {
   return results.filter((r) => !r.ok && r.status !== 429);
 }
 
-async function reviewContentWithClaude(apiKey, pageUrl, bodyText) {
-  if (!apiKey) return null;
-  const sample = bodyText.slice(0, 3000);
-  const prompt = `You're proofreading the visible text content of a physical
-therapy / wellness clinic's website page (${pageUrl}) for a front-end content
-audit. Here's the extracted visible text:
-
-"""
-${sample}
-"""
-
-Check for: spelling errors, obvious typos, duplicated words/sentences,
-awkward or broken phrasing, and placeholder text that looks like it was
-never replaced (e.g. "Lorem ipsum", "Your Business Name Here", "Insert text").
-List specific issues found, quoting the exact problem text, with a fix
-suggestion for each. If nothing is wrong, just say "No content issues found."
-Plain text, no markdown, no em dashes. Keep it to the actual issues, don't
-pad with commentary.`;
+async function reviewContentWithLanguageTool(bodyText) {
+  const sample = bodyText.slice(0, 15000); // LanguageTool's free tier caps around 20k chars
+  if (!sample.trim()) return null;
 
   try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-6",
-        max_tokens: 500,
-        messages: [{ role: "user", content: prompt }],
-      }),
+    const params = new URLSearchParams({
+      text: sample,
+      language: "en-US",
+      enabledOnly: "false",
     });
+    const res = await fetch("https://api.languagetool.org/v2/check", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: params,
+    });
+    if (!res.ok) return null;
     const json = await res.json();
-    return json?.content?.find((b) => b.type === "text")?.text?.trim() || null;
+    const matches = json.matches || [];
+    if (matches.length === 0) return "No content issues found.";
+
+    // Skip style-only nitpicks; keep real spelling/grammar problems.
+    const relevant = matches.filter((m) => m.rule?.issueType !== "style").slice(0, 12);
+    if (relevant.length === 0) return "No content issues found.";
+
+    return relevant
+      .map((m) => {
+        const context = m.context?.text || "";
+        const suggestion = m.replacements?.[0]?.value;
+        return `"${context.trim()}"${suggestion ? ` — suggested fix: "${suggestion}"` : ""} (${m.message})`;
+      })
+      .join("\n");
   } catch {
     return null;
   }
@@ -210,10 +206,9 @@ export async function POST(req) {
     }
 
     const { checks, bodyText, $ } = runTechnicalChecks(page.finalUrl || pageUrl, page.text);
-    const apiKey = process.env.ANTHROPIC_API_KEY;
     const [brokenLinks, contentIssues] = await Promise.all([
       checkLinks($, page.finalUrl || pageUrl),
-      reviewContentWithClaude(apiKey, page.finalUrl || pageUrl, bodyText),
+      reviewContentWithLanguageTool(bodyText),
     ]);
     const shortcodeArtifacts = findShortcodeArtifacts(bodyText);
 
