@@ -84,24 +84,24 @@ async function snapshotAndGetPrevious(client, mappedKeywords, code) {
     .map((k) => ({
       client_slug: client.slug,
       keyword: k.keyword,
-      site_engine_id: k.site_engine_id,
+      ranking_type: k.ranking_type || "organic",
       month_code: code,
       position: k.position,
     }));
   if (currentRows.length) {
     await supabase
       .from("keyword_month_snapshots")
-      .upsert(currentRows, { onConflict: "client_slug,keyword,site_engine_id,month_code" });
+      .upsert(currentRows, { onConflict: "client_slug,keyword,ranking_type,month_code" });
   }
 
   const prev = prevMonthInfo();
   const { data: prevRows } = await supabase
     .from("keyword_month_snapshots")
-    .select("keyword,site_engine_id,position")
+    .select("keyword,ranking_type,position")
     .eq("client_slug", client.slug)
     .eq("month_code", prev.code);
 
-  const prevMap = new Map((prevRows || []).map((r) => [`${r.keyword}::${r.site_engine_id}`, r.position]));
+  const prevMap = new Map((prevRows || []).map((r) => [`${r.keyword}::${r.ranking_type}`, r.position]));
   return { prevMap, prevLabel: prev.label };
 }
 
@@ -123,13 +123,12 @@ async function fetchGoogleRating(client) {
 }
 
 async function getClientReportData(client) {
-  const [{ data: keywords }, { data: ai }, { data: local }, { data: engines }] = await Promise.all([
+  const [{ data: keywords }, { data: ai }, { data: local }] = await Promise.all([
     supabase.from("keyword_rankings").select("*").eq("client_slug", client.slug),
     supabase.from("ai_visibility").select("*").eq("client_slug", client.slug),
     supabase.from("local_pack").select("*").eq("client_slug", client.slug),
-    supabase.from("search_engines").select("*").eq("client_slug", client.slug),
   ]);
-  return { keywords: keywords || [], ai: ai || [], local: local || [], engines: engines || [] };
+  return { keywords: keywords || [], ai: ai || [], local: local || [] };
 }
 
 function renderKpiGrid(kpis) {
@@ -147,7 +146,7 @@ function renderKpiGrid(kpis) {
 function renderMarketBlock(regionLabel, groupKeywords, insightHtml, prevMap, prevLabel, currLabel) {
   const rows = groupKeywords
     .map((k) => {
-      const prevPos = prevMap.get(`${k.keyword}::${k.site_engine_id}`);
+      const prevPos = prevMap.get(`${k.keyword}::${k.ranking_type || "organic"}`);
       const currPos = k.position;
       const change = prevPos && currPos ? prevPos - currPos : k.position_change;
       return `<tr><td>${esc(k.keyword)}</td><td class="${posClass(prevPos)}">${
@@ -213,12 +212,14 @@ async function generateReportForClient(client) {
       "Missing required env vars (SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, ANTHROPIC_API_KEY). Check they're set in Vercel (for the on-demand button) or GitHub Actions secrets (for the batch job)."
     );
   }
-  const { keywords, ai, local, engines } = await getClientReportData(client);
+  const { keywords, ai, local } = await getClientReportData(client);
   const label = monthLabel();
   const code = monthCode();
 
-  const regionByEngine = new Map(engines.map((e) => [e.site_engine_id, e.region_name]));
-  const mappedKeywords = keywords.filter((k) => regionByEngine.get(k.site_engine_id) || engines.length === 0);
+  // Organic rankings drive the report's main tables; maps rankings are
+  // stored per keyword too (ranking_type='maps') but the report focuses on
+  // organic, matching the historical report format.
+  const mappedKeywords = keywords.filter((k) => k.ranking_type === "organic");
   const bestPosition = mappedKeywords.filter((k) => k.position > 0).sort((a, b) => a.position - b.position)[0];
   const mentionedCount = ai.filter((a) => a.mentioned).length;
   const aiScore = ai.length ? Math.round((mentionedCount / ai.length) * 100) : null;
@@ -242,14 +243,15 @@ Write 3-5 sentences a client would actually want to read: what's working, in spe
 numbers, and what the team is focused on next. Plain text only, no markdown.`;
   const execSummary = await askClaude(execPrompt, 300);
 
-  // Per-market insight (grouped by region, or a single group if not multi-location)
-  const distinctEngines = engines.length ? [...new Set(mappedKeywords.map((k) => k.site_engine_id))] : ["_all"];
+  // Per-market insight (grouped by the sheet's location label, or a single
+  // group if the client only has one location)
+  const distinctLocations = [...new Set(mappedKeywords.map((k) => k.location_label || "_main"))];
   const marketBlocksHtml = [];
-  for (const engineId of distinctEngines) {
+  for (const locKey of distinctLocations) {
     const groupKeywords =
-      engineId === "_all" ? mappedKeywords : mappedKeywords.filter((k) => k.site_engine_id === engineId);
+      locKey === "_main" ? mappedKeywords : mappedKeywords.filter((k) => (k.location_label || "_main") === locKey);
     if (!groupKeywords.length) continue;
-    const regionLabel = engineId === "_all" ? client.clinic_name.split(" ")[0] : regionByEngine.get(engineId) || "Market";
+    const regionLabel = locKey === "_main" ? client.clinic_name.split(" ")[0] : locKey;
     const marketPrompt = `Write a 2-3 sentence client-facing insight for the "${regionLabel}" market
 of ${client.clinic_name}'s SEO report. Rankings: ${JSON.stringify(
       groupKeywords.map((k) => ({ keyword: k.keyword, position: k.position, change: k.position_change }))

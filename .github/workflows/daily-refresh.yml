@@ -17,10 +17,11 @@ jobs:
           node-version: "22"
 
       - name: Install dependencies
-        run: npm install @supabase/supabase-js
+        run: npm install @supabase/supabase-js papaparse
 
       - name: Run refresh script
         env:
+          GOOGLE_SHEET_CSV_URL: ${{ secrets.GOOGLE_SHEET_CSV_URL }}
           SE_RANKING_API_KEY: ${{ secrets.SE_RANKING_API_KEY }}
           LOCAL_FALCON_API_KEY: ${{ secrets.LOCAL_FALCON_API_KEY }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}

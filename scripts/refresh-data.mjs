@@ -1,24 +1,28 @@
 // Daily refresh script — run by GitHub Actions on a cron schedule.
-// Pulls keyword rankings + AI visibility from SE Ranking, and local pack
-// data from Local Falcon (for clients that have a local_falcon_place_id set),
-// then writes everything into Supabase.
+// Pulls keyword rankings from a manually-updated Google Sheet (published to
+// web as CSV — SE Ranking's API was dropped due to recurring billing
+// issues), AI visibility from SE Ranking (still active), and local pack
+// data from Local Falcon, then writes everything into Supabase.
 //
 // Required env vars (set as GitHub Actions secrets):
-//   SE_RANKING_API_KEY
+//   GOOGLE_SHEET_CSV_URL
+//   SE_RANKING_API_KEY   (still used for AI Visibility only)
 //   LOCAL_FALCON_API_KEY
 //   SUPABASE_URL
 //   SUPABASE_SERVICE_ROLE_KEY
 
 import { createClient } from "@supabase/supabase-js";
+import Papa from "papaparse";
 import clients from "../data/clients.json" with { type: "json" };
 
+const GOOGLE_SHEET_CSV_URL = process.env.GOOGLE_SHEET_CSV_URL;
 const SE_RANKING_KEY = process.env.SE_RANKING_API_KEY;
 const LOCAL_FALCON_KEY = process.env.LOCAL_FALCON_API_KEY;
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY; // optional — insights skipped if absent
 
-if (!SE_RANKING_KEY || !SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
   console.error("Missing required env vars. Check GitHub Actions secrets.");
   process.exit(1);
 }
@@ -28,17 +32,9 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 const SE_BASE = "https://api.seranking.com/v1/project-management";
 const LF_BASE = "https://api.localfalcon.com";
 
-// Manual overrides: for these clients, force the primary keyword to the one
-// containing this text, instead of trusting the lowest-ID auto-detection.
-// Matched case-insensitively as a substring against the keyword name.
-const PRIMARY_KEYWORD_OVERRIDES = {
-  "avila-pt": "corpus christi",
-  "body-moksha-pt": "chatham",
-  "focus-pt": "louisville",
-  "mid-county-pt": "woodbridge",
-  "pt-group-of-florida": "fort lauderdale",
-  "back-worx": "bradenton",
-};
+function normalizeName(s) {
+  return (s || "").toLowerCase().trim().replace(/\s+/g, " ");
+}
 
 function todayISO() {
   return new Date().toISOString().slice(0, 10);
@@ -56,6 +52,113 @@ function mondayOfCurrentWeek() {
   const diff = (day === 0 ? -6 : 1) - day;
   d.setUTCDate(d.getUTCDate() + diff);
   return d.toISOString().slice(0, 10);
+}
+
+function parsePosition(raw) {
+  if (raw === undefined || raw === null) return null;
+  const s = String(raw).trim();
+  if (!s || s.toUpperCase() === "N/A" || s === "-") return null;
+  const n = parseFloat(s);
+  return isFinite(n) && n > 0 ? Math.round(n) : null;
+}
+
+// Fetches the published sheet and returns rows keyed by normalized company name.
+// Sheet layout (fixed columns, then repeating groups of 3 for extra locations):
+//   0: Client Name (owner)   1: GSC   2: Top 5 AI   3: 150/mo
+//   4: Main Keyword   5: Organic #1   6: Maps #1   7: Company Name
+//   8+: [Location Keyword, Organic #, Maps #] repeating, up to 17 more groups
+async function fetchSheetData() {
+  if (!GOOGLE_SHEET_CSV_URL) {
+    console.error("GOOGLE_SHEET_CSV_URL not set — skipping ranking sheet refresh entirely.");
+    return new Map();
+  }
+  const res = await fetch(GOOGLE_SHEET_CSV_URL);
+  if (!res.ok) throw new Error(`Failed to fetch ranking sheet: ${res.status}`);
+  const text = await res.text();
+  const parsed = Papa.parse(text.trim(), { header: false, skipEmptyLines: true });
+  const rows = parsed.data.slice(1); // drop header row — column names aren't unique enough to trust
+
+  const byCompany = new Map();
+  for (const row of rows) {
+    const companyName = (row[7] || "").trim();
+    if (!companyName) continue; // rows with no Company Name aren't part of our roster
+
+    const entries = [];
+    const mainKeyword = (row[4] || "").trim();
+    if (mainKeyword) {
+      entries.push({ keyword: mainKeyword, organic: parsePosition(row[5]), maps: parsePosition(row[6]), isPrimary: true, locationLabel: null });
+    }
+    for (let i = 0; i < 17; i++) {
+      const base = 8 + i * 3;
+      const locKeyword = (row[base] || "").trim();
+      if (!locKeyword) continue;
+      entries.push({
+        keyword: locKeyword,
+        organic: parsePosition(row[base + 1]),
+        maps: parsePosition(row[base + 2]),
+        isPrimary: false,
+        locationLabel: locKeyword,
+      });
+    }
+    byCompany.set(normalizeName(companyName), entries);
+  }
+  return byCompany;
+}
+
+function findSheetEntriesForClient(sheetData, client) {
+  const norm = normalizeName(client.clinic_name);
+  if (sheetData.has(norm)) return sheetData.get(norm);
+  // Fuzzy fallback — handles cases like "Avi Singh - Precision Physiotherapy..."
+  // in the sheet vs "Precision Physiotherapy..." in our records.
+  for (const [key, entries] of sheetData) {
+    if (key.includes(norm) || norm.includes(key)) return entries;
+  }
+  return null;
+}
+
+async function refreshKeywordRankingsFromSheet(client, sheetData) {
+  const entries = findSheetEntriesForClient(sheetData, client);
+  if (!entries || entries.length === 0) return 0;
+
+  const weekStart = mondayOfCurrentWeek();
+  const today = todayISO();
+
+  // Pull existing rows once so we can compute position_change vs last update.
+  const { data: existingRows } = await supabase
+    .from("keyword_rankings")
+    .select("keyword,ranking_type,position")
+    .eq("client_slug", client.slug);
+  const existingMap = new Map((existingRows || []).map((r) => [`${r.keyword}::${r.ranking_type}`, r.position]));
+
+  const rows = [];
+  for (const entry of entries) {
+    for (const [rankingType, pos] of [["organic", entry.organic], ["maps", entry.maps]]) {
+      if (pos === null && !existingMap.has(`${entry.keyword}::${rankingType}`)) continue; // never seen and still unranked — skip noise
+      const prevPos = existingMap.get(`${entry.keyword}::${rankingType}`);
+      const positionChange = prevPos && pos ? prevPos - pos : null;
+      rows.push({
+        client_slug: client.slug,
+        keyword: entry.keyword,
+        position: pos,
+        position_change: positionChange,
+        location_label: entry.locationLabel,
+        ranking_type: rankingType,
+        checked_date: today,
+        best_position_week: pos, // one snapshot per week from the manual sheet — this week's value IS the best/only one
+        week_start: weekStart,
+        is_primary: entry.isPrimary && rankingType === "organic",
+        updated_at: new Date().toISOString(),
+      });
+    }
+  }
+
+  if (rows.length) {
+    const { error } = await supabase
+      .from("keyword_rankings")
+      .upsert(rows, { onConflict: "client_slug,keyword,ranking_type" });
+    if (error) throw error;
+  }
+  return rows.length;
 }
 
 async function seGet(path, params = {}) {
@@ -85,107 +188,6 @@ async function lfPost(path, form = {}) {
     throw new Error(`Local Falcon ${path} failed: ${res.status} ${json?.message || ""}`);
   }
   return json;
-}
-
-async function refreshKeywordRankings(client) {
-  const dateTo = todayISO();
-  const dateFrom = daysAgoISO(7);
-
-  const positions = await seGet("/sites/positions", {
-    site_id: client.site_id,
-    date_from: dateFrom,
-    date_to: dateTo,
-  });
-
-  const keywordsList = await seGet("/keywords", { site_id: client.site_id });
-  const keywordNameById = new Map(keywordsList.map((k) => [String(k.id), k.name]));
-
-  // Determine the primary keyword: use the manual override if one exists
-  // for this client, otherwise fall back to the lowest keyword ID (the
-  // first one ever added to the project in SE Ranking).
-  let primaryKeywordId = null;
-  const overrideText = PRIMARY_KEYWORD_OVERRIDES[client.slug];
-  if (overrideText) {
-    const match = keywordsList.find((k) =>
-      k.name.toLowerCase().includes(overrideText.toLowerCase())
-    );
-    if (match) primaryKeywordId = String(match.id);
-  }
-  if (!primaryKeywordId && keywordsList.length) {
-    primaryKeywordId = String(Math.min(...keywordsList.map((k) => k.id)));
-  }
-
-  const weekStart = mondayOfCurrentWeek();
-
-  const rows = [];
-  for (const engineBlock of positions) {
-    const siteEngineId = engineBlock.site_engine_id;
-    for (const kw of engineBlock.keywords || []) {
-      const historyThisRun = kw.positions || [];
-      const latest = historyThisRun.slice(-1)[0];
-      if (!latest) continue;
-      const keywordName = keywordNameById.get(String(kw.id)) || `keyword_${kw.id}`;
-      const currentPos = latest.pos ?? null;
-
-      // Compute "best position this week" straight from SE Ranking's own
-      // historical entries (the API already returns up to 7 days per call,
-      // which safely covers Monday-to-today since a week is only 7 days).
-      // This is recomputed fresh every run rather than trusted from a
-      // previous run's stored value, so it can't drift if a day is missed.
-      const thisWeeksEntries = historyThisRun.filter(
-        (p) => p.date >= weekStart && p.pos && p.pos > 0
-      );
-      const bestPositionWeek = thisWeeksEntries.length
-        ? Math.min(...thisWeeksEntries.map((p) => p.pos))
-        : currentPos && currentPos > 0
-        ? currentPos
-        : null;
-
-      rows.push({
-        client_slug: client.slug,
-        keyword: keywordName,
-        position: currentPos,
-        position_change: latest.change ?? null,
-        site_engine_id: siteEngineId,
-        checked_date: latest.date,
-        best_position_week: bestPositionWeek,
-        week_start: weekStart,
-        is_primary: String(kw.id) === primaryKeywordId,
-        updated_at: new Date().toISOString(),
-      });
-    }
-  }
-
-  if (rows.length) {
-    const { error } = await supabase
-      .from("keyword_rankings")
-      .upsert(rows, { onConflict: "client_slug,keyword,site_engine_id" });
-    if (error) throw error;
-  }
-  return rows.length;
-}
-
-async function refreshSearchEngines(client) {
-  let engines;
-  try {
-    engines = await seGet("/sites/search-engines", { site_id: client.site_id });
-  } catch (e) {
-    return 0;
-  }
-  if (!Array.isArray(engines) || engines.length === 0) return 0;
-
-  const rows = engines.map((e) => ({
-    client_slug: client.slug,
-    site_engine_id: e.site_engine_id,
-    region_name: e.region_name || null,
-    updated_at: new Date().toISOString(),
-  }));
-
-  const { error } = await supabase
-    .from("search_engines")
-    .upsert(rows, { onConflict: "client_slug,site_engine_id" });
-  if (error) throw error;
-  return rows.length;
 }
 
 async function refreshAiVisibility(client) {
@@ -479,17 +481,25 @@ async function main() {
   let failCount = 0;
   const errors = [];
 
+  let sheetData;
+  try {
+    sheetData = await fetchSheetData();
+    console.log(`Loaded ranking sheet: ${sheetData.size} clients found in sheet.`);
+  } catch (err) {
+    console.error("Failed to load ranking sheet:", err.message);
+    sheetData = new Map();
+  }
+
   for (const client of clients) {
     try {
       await upsertClientRecord(client);
-      await refreshSearchEngines(client);
-      const kwCount = await refreshKeywordRankings(client);
+      const kwCount = await refreshKeywordRankingsFromSheet(client, sheetData);
       const aiCount = await refreshAiVisibility(client);
       const lfCount = await refreshLocalPack(client);
       await generateInsight(client);
       await generatePriorityRecommendation(client);
       console.log(
-        `[ok] ${client.clinic_name}: ${kwCount} keywords, ${aiCount} AI engines, ${lfCount} local pack rows`
+        `[ok] ${client.clinic_name}: ${kwCount} keyword rows, ${aiCount} AI engines, ${lfCount} local pack rows`
       );
       successCount += 1;
     } catch (err) {
@@ -497,7 +507,6 @@ async function main() {
       errors.push(`${client.clinic_name}: ${err.message}`);
       failCount += 1;
     }
-    // gentle pacing to stay under SE Ranking's 5 req/sec limit
     await new Promise((r) => setTimeout(r, 300));
   }
 

@@ -17,13 +17,15 @@ create table if not exists keyword_rankings (
   keyword text not null,
   position int,          -- current position, 0 or null = not ranked
   position_change int,   -- vs previous check
-  site_engine_id int,
+  site_engine_id int,    -- legacy (SE Ranking era) — unused for sheet-sourced data
+  location_label text,   -- e.g. "Lehi, UT" — from the manual sheet's location keyword
+  ranking_type text default 'organic', -- 'organic' or 'maps'
   checked_date date,
   best_position_week int,   -- best (lowest) position seen so far this week
   week_start date,          -- Monday of the week best_position_week applies to
-  is_primary boolean default false, -- true for the first keyword ever added to this project in SE Ranking
+  is_primary boolean default false, -- true for the client's Main Keyword row
   updated_at timestamptz default now(),
-  unique (client_slug, keyword, site_engine_id)
+  unique (client_slug, keyword, ranking_type)
 );
 
 create table if not exists search_engines (
@@ -107,14 +109,16 @@ create table if not exists generated_blogs (
   generated_at timestamptz default now()
 );
 alter table generated_blogs enable row level security;
+
+create table if not exists keyword_month_snapshots (
   id bigserial primary key,
   client_slug text references clients(slug) on delete cascade,
   keyword text not null,
-  site_engine_id int,
+  ranking_type text default 'organic',
   month_code text not null,   -- e.g. '2026-07'
   position int,
   created_at timestamptz default now(),
-  unique (client_slug, keyword, site_engine_id, month_code)
+  unique (client_slug, keyword, ranking_type, month_code)
 );
 alter table keyword_month_snapshots enable row level security;
 

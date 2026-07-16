@@ -6,7 +6,7 @@ import KeywordPositionChart from "./KeywordPositionChart";
 export const revalidate = 3600;
 
 async function getClientData(slug) {
-  const [{ data: client }, { data: keywords }, { data: ai }, { data: insight }, { data: engines }] =
+  const [{ data: client }, { data: keywords }, { data: ai }, { data: insight }] =
     await Promise.all([
       supabase.from("clients").select("*").eq("slug", slug).single(),
       supabase
@@ -16,7 +16,6 @@ async function getClientData(slug) {
         .order("position", { ascending: true }),
       supabase.from("ai_visibility").select("*").eq("client_slug", slug),
       supabase.from("client_insights").select("*").eq("client_slug", slug).maybeSingle(),
-      supabase.from("search_engines").select("*").eq("client_slug", slug),
     ]);
 
   return {
@@ -24,7 +23,6 @@ async function getClientData(slug) {
     keywords: keywords || [],
     ai: ai || [],
     insight,
-    engines: engines || [],
   };
 }
 
@@ -47,7 +45,7 @@ function trendLabel(change) {
 }
 
 export default async function ClientPage({ params }) {
-  const { client, keywords, ai, insight, engines } = await getClientData(params.slug);
+  const { client, keywords, ai, insight } = await getClientData(params.slug);
 
   if (!client) {
     return (
@@ -62,9 +60,10 @@ export default async function ClientPage({ params }) {
     );
   }
 
-  const regionByEngine = new Map(engines.map((e) => [e.site_engine_id, e.region_name]));
-  const mappedKeywords = keywords.filter((k) => regionByEngine.get(k.site_engine_id) || engines.length === 0);
-  const isMultiLocation = new Set(mappedKeywords.map((k) => k.site_engine_id)).size > 1;
+  // Organic rankings drive the main tables/KPIs; maps rankings are stored
+  // alongside the same keyword (ranking_type='maps') for future display.
+  const mappedKeywords = keywords.filter((k) => k.ranking_type === "organic");
+  const isMultiLocation = new Set(mappedKeywords.map((k) => k.location_label || "Main")).size > 1;
 
   const bestPosition = mappedKeywords
     .filter((k) => k.position && k.position > 0)
@@ -175,7 +174,7 @@ export default async function ClientPage({ params }) {
               {goodKeywords.map((k) => (
                 <tr key={k.id}>
                   <td>{k.keyword}</td>
-                  {isMultiLocation && <td style={{ textAlign: "left", color: "#888", fontSize: 12 }}>{regionByEngine.get(k.site_engine_id) || "—"}</td>}
+                  {isMultiLocation && <td style={{ textAlign: "left", color: "#888", fontSize: 12 }}>{k.location_label || "Main"}</td>}
                   <td className={posClass(k.position)}>{k.position}</td>
                   <td className={trendClass(k.position_change)}>{trendLabel(k.position_change)}</td>
                 </tr>
@@ -201,7 +200,7 @@ export default async function ClientPage({ params }) {
               {needsImprovement.map((k) => (
                 <tr key={k.id}>
                   <td>{k.keyword}</td>
-                  {isMultiLocation && <td style={{ textAlign: "left", color: "#888", fontSize: 12 }}>{regionByEngine.get(k.site_engine_id) || "—"}</td>}
+                  {isMultiLocation && <td style={{ textAlign: "left", color: "#888", fontSize: 12 }}>{k.location_label || "Main"}</td>}
                   <td className={posClass(k.position)}>{k.position && k.position > 0 ? k.position : "NR"}</td>
                   <td className={trendClass(k.position_change)}>{trendLabel(k.position_change)}</td>
                 </tr>
