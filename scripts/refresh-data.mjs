@@ -60,6 +60,14 @@ const ALLOWED_OWNER_NAMES = new Set(
   ].map(normalizeName)
 );
 
+// Backup path by clinic name, in case an owner name doesn't match exactly
+// (nickname, middle initial, extra space, etc.) — either match is enough.
+const ALLOWED_COMPANY_NAMES = new Set(
+  ["Chehalem Physical Therapy", "Elevate Physical Therapy and Fitness", "Streamline Performance Physical Therapy"].map(
+    normalizeName
+  )
+);
+
 function todayISO() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -107,7 +115,9 @@ async function fetchSheetData() {
     const companyName = (row[7] || "").trim();
     if (!companyName) continue; // rows with no Company Name aren't part of our roster
     const ownerName = (row[0] || "").trim();
-    if (!ALLOWED_OWNER_NAMES.has(normalizeName(ownerName))) continue; // not one of our clients — shared sheet has other team members' clients too
+    const ownerOk = ALLOWED_OWNER_NAMES.has(normalizeName(ownerName));
+    const companyOk = ALLOWED_COMPANY_NAMES.has(normalizeName(companyName));
+    if (!ownerOk && !companyOk) continue; // not one of our clients — shared sheet has other team members' clients too
 
     const entries = [];
     const mainKeyword = (row[4] || "").trim();
