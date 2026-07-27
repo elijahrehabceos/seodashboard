@@ -36,6 +36,30 @@ function normalizeName(s) {
   return (s || "").toLowerCase().trim().replace(/\s+/g, " ");
 }
 
+// STOPGAP: the ranking sheet is shared with other team members, and their
+// clients live in the same tab. The real marker for "this is one of ours"
+// is a gold/blue cell background color, which the published CSV strips out
+// entirely (CSV has no formatting). Until we wire up the Sheets API to read
+// real colors, we allowlist by the exact owner names known to be ours.
+const ALLOWED_OWNER_NAMES = new Set(
+  [
+    "Anthony Avila", "Betty DeLass", "Giovanna Bossio", "Jonson Y", "Kristian Marcial",
+    "Shaden Ghattas", "Shelly Coffman", "Zak Hill", "Carlo Sayo", "Paul Vidal",
+    "Isaac Ervin", "Amy Robinson", "Dan Carroll", "Jordan Zuccarelli", "Natalie Tilton",
+    "Darin Deaton | Trey Taylor", "Blase Strobl", "Sonya Brooks", "Jarrod Matthew",
+    "Matthew Nelson", "Amy Wunsch", "Sergio Martinez", "Michael Chua", "Kenny Holder",
+    "Brian Kent", "Taci Wilson", "Brad Conder", "Cameron Dennis", "Hayley Apiscopa",
+    "John Talty", "Jack Wong", "Mark Anthony Rodriguez", "Seth Greiner",
+    "John Mark Chesney", "Mike Minett", "Neil Holmes", "Sarah Crawford",
+    "Tejal Ramaiya", "Alaina Marino", "Daniel Mills", "Bryan Ladd", "Adam Wolf",
+    "Ryan & Clay Ardoin", "Ken Clark", "Beth Winkler", "Karl Kolbeck",
+    "Lindsey Bellcase", "Ryan Godfrey", "Theo Peterson & Kezia Peterson",
+    "Kathryn Cieniewicz", "Leslie Wakefield", "Eric Gonsalves / Brianna Landry",
+    "Taylor Holland", "Jordan McCormack", "Avi Singh",
+    "Dan Wrzosek", "Sean McInerney",
+  ].map(normalizeName)
+);
+
 function todayISO() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -83,6 +107,7 @@ async function fetchSheetData() {
     const companyName = (row[7] || "").trim();
     if (!companyName) continue; // rows with no Company Name aren't part of our roster
     const ownerName = (row[0] || "").trim();
+    if (!ALLOWED_OWNER_NAMES.has(normalizeName(ownerName))) continue; // not one of our clients — shared sheet has other team members' clients too
 
     const entries = [];
     const mainKeyword = (row[4] || "").trim();
