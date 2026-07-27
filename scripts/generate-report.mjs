@@ -11,7 +11,6 @@
 //   LOCAL_FALCON_API_KEY (optional — used only for Google rating/reviews)
 
 import { createClient } from "@supabase/supabase-js";
-import clientsData from "../data/clients.json" with { type: "json" };
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -544,7 +543,15 @@ export { generateReportForClient };
 
 async function main() {
   const targetSlug = process.argv[2];
-  const targets = targetSlug ? clientsData.filter((c) => c.slug === targetSlug) : clientsData;
+
+  let targets;
+  if (targetSlug) {
+    const { data: client } = await supabase.from("clients").select("*").eq("slug", targetSlug).single();
+    targets = client ? [client] : [];
+  } else {
+    const { data } = await supabase.from("clients").select("*").order("clinic_name");
+    targets = data || [];
+  }
 
   if (targetSlug && targets.length === 0) {
     console.error(`No client found with slug "${targetSlug}"`);

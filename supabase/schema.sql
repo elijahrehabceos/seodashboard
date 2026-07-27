@@ -5,8 +5,8 @@ create table if not exists clients (
   slug text primary key,
   clinic_name text not null,
   owner_name text not null,
-  domain text not null,
-  site_id bigint not null,
+  domain text not null default '',
+  site_id bigint,
   local_falcon_place_id text,
   updated_at timestamptz default now()
 );

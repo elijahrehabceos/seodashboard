@@ -82,6 +82,7 @@ async function fetchSheetData() {
   for (const row of rows) {
     const companyName = (row[7] || "").trim();
     if (!companyName) continue; // rows with no Company Name aren't part of our roster
+    const ownerName = (row[0] || "").trim();
 
     const entries = [];
     const mainKeyword = (row[4] || "").trim();
@@ -100,18 +101,71 @@ async function fetchSheetData() {
         locationLabel: locKeyword,
       });
     }
-    byCompany.set(normalizeName(companyName), entries);
+    byCompany.set(normalizeName(companyName), { companyName, ownerName, entries });
   }
   return byCompany;
 }
 
+function slugify(text) {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60);
+}
+
+// Any company in the sheet that doesn't match an existing client becomes a
+// new client automatically — no manual "add this client" step needed.
+function buildFullClientList(sheetData, existingClients) {
+  const matchedKeys = new Set();
+  for (const client of existingClients) {
+    const norm = normalizeName(client.clinic_name);
+    if (sheetData.has(norm)) {
+      matchedKeys.add(norm);
+      continue;
+    }
+    for (const key of sheetData.keys()) {
+      if (key.includes(norm) || norm.includes(key)) {
+        matchedKeys.add(key);
+        break;
+      }
+    }
+  }
+
+  const autoDetected = [];
+  for (const [key, { companyName, ownerName }] of sheetData) {
+    if (matchedKeys.has(key)) continue;
+    autoDetected.push({
+      slug: slugify(companyName),
+      clinic_name: companyName,
+      owner_name: ownerName || "Unknown",
+      domain: "",
+      site_id: null,
+      local_falcon_place_id: null,
+      auto_detected: true,
+    });
+  }
+
+  if (autoDetected.length) {
+    console.log(
+      `Auto-detected ${autoDetected.length} new client(s) from the sheet not yet in our roster: ${autoDetected
+        .map((c) => c.clinic_name)
+        .join(", ")}`
+    );
+  }
+
+  return [...existingClients, ...autoDetected];
+}
+
 function findSheetEntriesForClient(sheetData, client) {
   const norm = normalizeName(client.clinic_name);
-  if (sheetData.has(norm)) return sheetData.get(norm);
+  if (sheetData.has(norm)) return sheetData.get(norm).entries;
   // Fuzzy fallback — handles cases like "Avi Singh - Precision Physiotherapy..."
   // in the sheet vs "Precision Physiotherapy..." in our records.
-  for (const [key, entries] of sheetData) {
-    if (key.includes(norm) || norm.includes(key)) return entries;
+  for (const [key, value] of sheetData) {
+    if (key.includes(norm) || norm.includes(key)) return value.entries;
   }
   return null;
 }
@@ -490,7 +544,9 @@ async function main() {
     sheetData = new Map();
   }
 
-  for (const client of clients) {
+  const fullClientList = buildFullClientList(sheetData, clients);
+
+  for (const client of fullClientList) {
     try {
       await upsertClientRecord(client);
       const kwCount = await refreshKeywordRankingsFromSheet(client, sheetData);

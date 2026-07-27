@@ -1,12 +1,16 @@
 import { createClient } from "@supabase/supabase-js";
-import clientsData from "../../../../data/clients.json" with { type: "json" };
 import { generateReportForClient } from "../../../../scripts/generate-report.mjs";
 
 export const maxDuration = 60; // allow up to 60s for the Claude calls + assembly
 
 export async function GET(req, { params }) {
   const { slug } = params;
-  const client = clientsData.find((c) => c.slug === slug);
+
+  const supabase = createClient(
+    process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  );
+  const { data: client } = await supabase.from("clients").select("*").eq("slug", slug).single();
   if (!client) {
     return Response.json({ error: "Client not found" }, { status: 404 });
   }
