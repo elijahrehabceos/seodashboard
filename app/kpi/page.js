@@ -31,7 +31,7 @@ async function getKpiData() {
         ? primary.best_position_week ?? primary.position
         : null;
 
-      const inTop5 = !!(effectivePosition && effectivePosition > 0 && effectivePosition <= 5);
+      const inTop5 = !!(effectivePosition && effectivePosition > 0 && effectivePosition <= 3);
       const inTop10 = !!(effectivePosition && effectivePosition > 0 && effectivePosition <= 10);
       return { ...c, primary, effectivePosition, inTop5, inTop10 };
     });
@@ -56,7 +56,7 @@ export default async function KpiPage() {
         <div className="rd-cover-brand"><img src="/rehabceos-logo.webp" alt="Rehab CEOs" style={{ height: 30, width: "auto" }} /></div>
         <div className="rd-cover-eyebrow">Team Performance</div>
         <div className="rd-cover-title">SEO Team KPI</div>
-        <div className="rd-cover-domain">Top 5 &amp; Top 10 on primary local keyword</div>
+        <div className="rd-cover-domain">Top 3 &amp; Top 10 on primary local keyword</div>
       </div>
 
       <div className="rd-page" style={{ maxWidth: 900 }}>
@@ -70,7 +70,7 @@ export default async function KpiPage() {
 
         <div className="rd-kpi-grid">
           <div className="rd-kpi">
-            <div className="rd-kpi-lbl">Clients Ranking Top 5</div>
+            <div className="rd-kpi-lbl">Clients Ranking Top 3</div>
             <div className={`rd-kpi-val ${isGood5 ? "g" : "gold"}`}>{top5Count} / {totalCount}</div>
             <div className="rd-kpi-sub">{pct5}% team rate this week</div>
           </div>

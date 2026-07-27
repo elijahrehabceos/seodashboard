@@ -24,7 +24,7 @@ async function getSnapshotData() {
     .map((c) => {
       const primary = primaryByClient.get(c.slug) || null;
       const effectivePosition = primary ? primary.best_position_week ?? primary.position : null;
-      const inTop5 = !!(effectivePosition && effectivePosition > 0 && effectivePosition <= 5);
+      const inTop5 = !!(effectivePosition && effectivePosition > 0 && effectivePosition <= 3);
       const inTop10 = !!(effectivePosition && effectivePosition > 0 && effectivePosition <= 10);
       return { ...c, primary, effectivePosition, inTop5, inTop10 };
     });
@@ -76,7 +76,7 @@ export default async function HomePage() {
 
         <div className="rd-kpi-grid">
           <div className="rd-kpi">
-            <div className="rd-kpi-lbl">Clients Ranking Top 5</div>
+            <div className="rd-kpi-lbl">Clients Ranking Top 3</div>
             <div className={`rd-kpi-val ${isGood5 ? "g" : "gold"}`}>{top5Count} / {totalCount}</div>
             <div className="rd-kpi-sub">{pct5}% team rate this week</div>
           </div>
