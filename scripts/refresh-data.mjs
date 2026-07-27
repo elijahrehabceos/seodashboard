@@ -211,6 +211,26 @@ async function refreshKeywordRankingsFromSheet(client, sheetData) {
       .from("keyword_rankings")
       .upsert(rows, { onConflict: "client_slug,keyword,ranking_type" });
     if (error) throw error;
+
+    // Log this week into the permanent history table too — this one never
+    // gets overwritten, so months from now you can see exactly where each
+    // client stood week by week.
+    const historyRows = rows
+      .filter((r) => r.position != null)
+      .map((r) => ({
+        client_slug: r.client_slug,
+        keyword: r.keyword,
+        ranking_type: r.ranking_type,
+        location_label: r.location_label,
+        week_start: r.week_start,
+        position: r.position,
+      }));
+    if (historyRows.length) {
+      const { error: histError } = await supabase
+        .from("keyword_week_snapshots")
+        .upsert(historyRows, { onConflict: "client_slug,keyword,ranking_type,week_start" });
+      if (histError) console.error(`[history log fail] ${client.clinic_name}:`, histError.message);
+    }
   }
   return rows.length;
 }

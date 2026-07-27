@@ -110,6 +110,19 @@ create table if not exists generated_blogs (
 );
 alter table generated_blogs enable row level security;
 
+create table if not exists keyword_week_snapshots (
+  id bigserial primary key,
+  client_slug text references clients(slug) on delete cascade,
+  keyword text not null,
+  ranking_type text default 'organic',
+  location_label text,
+  week_start date not null,   -- the Monday of the week this snapshot represents
+  position int,
+  created_at timestamptz default now(),
+  unique (client_slug, keyword, ranking_type, week_start)
+);
+alter table keyword_week_snapshots enable row level security;
+
 create table if not exists keyword_month_snapshots (
   id bigserial primary key,
   client_slug text references clients(slug) on delete cascade,
@@ -129,6 +142,7 @@ create policy "public read local_pack" on local_pack for select using (true);
 create policy "public read refresh_log" on refresh_log for select using (true);
 create policy "public read client_insights" on client_insights for select using (true);
 create policy "public read search_engines" on search_engines for select using (true);
+create policy "public read keyword_week_snapshots" on keyword_week_snapshots for select using (true);
 create policy "public read keyword_month_snapshots" on keyword_month_snapshots for select using (true);
 create policy "public read priority_recommendations" on priority_recommendations for select using (true);
 create policy "public read generated_blogs" on generated_blogs for select using (true);

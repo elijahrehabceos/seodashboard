@@ -2,6 +2,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import ClientChat from "./ClientChat";
 import KeywordPositionChart from "./KeywordPositionChart";
+import HistoryTrendChart from "./HistoryTrendChart";
 
 export const revalidate = 3600;
 
@@ -18,11 +19,26 @@ async function getClientData(slug) {
       supabase.from("client_insights").select("*").eq("client_slug", slug).maybeSingle(),
     ]);
 
+  const primary = (keywords || []).find((k) => k.is_primary);
+  let history = [];
+  if (primary) {
+    const { data: historyRows } = await supabase
+      .from("keyword_week_snapshots")
+      .select("week_start, position")
+      .eq("client_slug", slug)
+      .eq("keyword", primary.keyword)
+      .eq("ranking_type", "organic")
+      .order("week_start", { ascending: true });
+    history = historyRows || [];
+  }
+
   return {
     client,
     keywords: keywords || [],
     ai: ai || [],
     insight,
+    history,
+    primaryKeyword: primary?.keyword,
   };
 }
 
@@ -45,7 +61,7 @@ function trendLabel(change) {
 }
 
 export default async function ClientPage({ params }) {
-  const { client, keywords, ai, insight } = await getClientData(params.slug);
+  const { client, keywords, ai, insight, history, primaryKeyword } = await getClientData(params.slug);
 
   if (!client) {
     return (
@@ -153,6 +169,15 @@ export default async function ClientPage({ params }) {
             <div className="rd-sh"><div className="rd-sh-left"><span className="rd-sh-num">Chart</span><span className="rd-sh-title">Ranking Overview</span></div><span className="rd-sh-badge">Top 12</span></div>
             <div style={{ background: "#fff", border: "1px solid #e8e8e8", borderRadius: 12, padding: "20px 24px", marginBottom: 48 }}>
               <KeywordPositionChart keywords={mappedKeywords} />
+            </div>
+          </>
+        )}
+
+        {primaryKeyword && (
+          <>
+            <div className="rd-sh"><div className="rd-sh-left"><span className="rd-sh-num">Trend</span><span className="rd-sh-title">Weekly History</span></div><span className="rd-sh-badge">{primaryKeyword}</span></div>
+            <div style={{ background: "#fff", border: "1px solid #e8e8e8", borderRadius: 12, padding: "20px 24px", marginBottom: 48 }}>
+              <HistoryTrendChart history={history} />
             </div>
           </>
         )}
