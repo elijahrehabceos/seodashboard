@@ -122,12 +122,21 @@ async function fetchGoogleRating(client) {
 }
 
 async function getClientReportData(client) {
-  const [{ data: keywords }, { data: ai }, { data: local }] = await Promise.all([
+  const now = new Date();
+  const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString().slice(0, 10);
+
+  const [{ data: keywords }, { data: ai }, { data: local }, { data: weeklyHistory }] = await Promise.all([
     supabase.from("keyword_rankings").select("*").eq("client_slug", client.slug),
     supabase.from("ai_visibility").select("*").eq("client_slug", client.slug),
     supabase.from("local_pack").select("*").eq("client_slug", client.slug),
+    supabase
+      .from("keyword_week_snapshots")
+      .select("keyword, ranking_type, week_start, position")
+      .eq("client_slug", client.slug)
+      .gte("week_start", monthStart)
+      .order("week_start", { ascending: true }),
   ]);
-  return { keywords: keywords || [], ai: ai || [], local: local || [] };
+  return { keywords: keywords || [], ai: ai || [], local: local || [], weeklyHistory: weeklyHistory || [] };
 }
 
 function renderKpiGrid(kpis) {
@@ -211,7 +220,7 @@ async function generateReportForClient(client) {
       "Missing required env vars (SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, ANTHROPIC_API_KEY). Check they're set in Vercel (for the on-demand button) or GitHub Actions secrets (for the batch job)."
     );
   }
-  const { keywords, ai, local } = await getClientReportData(client);
+  const { keywords, ai, local, weeklyHistory } = await getClientReportData(client);
   const label = monthLabel();
   const code = monthCode();
 
@@ -236,10 +245,14 @@ for a physical therapy / wellness clinic client, sent by an agency (Rehab CEOs)
 to the clinic owner. Tone: confident, plain-spoken, factual, no hype, no em dashes.
 Clinic: ${client.clinic_name}.
 Keyword rankings: ${JSON.stringify(mappedKeywords.map((k) => ({ keyword: k.keyword, position: k.position, change: k.position_change })))}
+Week-by-week history this month (use this to describe the actual trajectory,
+not just start vs end): ${JSON.stringify(weeklyHistory)}
 AI visibility: ${JSON.stringify(ai.map((a) => ({ engine: a.engine, mentioned: a.mentioned })))}
 Local pack: ${JSON.stringify(local.map((l) => ({ location: l.location_label, arp: l.arp, solv: l.solv })))}
 Write 3-5 sentences a client would actually want to read: what's working, in specific
-numbers, and what the team is focused on next. Plain text only, no markdown.`;
+numbers, and what the team is focused on next. Reference the week-by-week movement
+where it's meaningful (e.g. "climbed from #8 to #3 over the month, with the biggest
+jump in week 3") rather than only comparing the start and end. Plain text only, no markdown.`;
   const execSummary = await askClaude(execPrompt, 300);
 
   // Per-market insight (grouped by the sheet's location label, or a single
@@ -251,10 +264,13 @@ numbers, and what the team is focused on next. Plain text only, no markdown.`;
       locKey === "_main" ? mappedKeywords : mappedKeywords.filter((k) => (k.location_label || "_main") === locKey);
     if (!groupKeywords.length) continue;
     const regionLabel = locKey === "_main" ? client.clinic_name.split(" ")[0] : locKey;
+    const groupKeywordNames = new Set(groupKeywords.map((k) => k.keyword));
+    const groupHistory = weeklyHistory.filter((h) => groupKeywordNames.has(h.keyword));
     const marketPrompt = `Write a 2-3 sentence client-facing insight for the "${regionLabel}" market
 of ${client.clinic_name}'s SEO report. Rankings: ${JSON.stringify(
       groupKeywords.map((k) => ({ keyword: k.keyword, position: k.position, change: k.position_change }))
-    )}. Confident, factual, no hype, no em dashes, plain text only.`;
+    )}. Week-by-week history this month: ${JSON.stringify(groupHistory)}. Reference the
+actual trajectory where meaningful, not just start vs end. Confident, factual, no hype, no em dashes, plain text only.`;
     const insightText = await askClaude(marketPrompt, 200);
     marketBlocksHtml.push(renderMarketBlock(regionLabel, groupKeywords, esc(insightText), prevMap, prevLabel, currLabel));
   }
