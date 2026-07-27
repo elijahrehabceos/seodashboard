@@ -88,7 +88,7 @@ export default async function KpiPage() {
 
         <div style={{ background: "#fff", border: "1px solid #e8e8e8", borderRadius: 12, padding: "24px 24px 8px", marginBottom: 28 }}>
           <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: ".1em", color: "#999", textTransform: "uppercase", marginBottom: 4 }}>
-            Team Position Distribution
+            Client Position Distribution
           </div>
           <TeamDistributionChart rows={rows} />
         </div>
