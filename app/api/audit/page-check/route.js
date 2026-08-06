@@ -182,17 +182,35 @@ async function reviewContentWithLanguageTool(bodyText) {
     const matches = json.matches || [];
     if (matches.length === 0) return "No content issues found.";
 
-    // Only genuine spelling mistakes (LanguageTool's "TYPOS" category) plus
-    // real repeated-word issues — never punctuation/typography/style
-    // nitpicks like double-dots, hyphen-vs-en-dash, or spacing preferences.
+    // Known real terms LanguageTool's generic dictionary doesn't recognize
+    // (physical therapy / medical vocabulary). This list will need to grow
+    // over time — a generic spell-checker can't know every specialized term.
+    const KNOWN_TERMS = new Set([
+      "myofascia", "myofascial", "proprioception", "proprioceptive", "kinesiology",
+      "subluxation", "dorsiflexion", "plantarflexion", "tenosynovitis", "osteoarthritis",
+      "rehabilitative", "biomechanics", "orthotics",
+    ]);
+
     const isRepeatedWordRule = (m) => /repeated a word|word repeat/i.test(m.message || "");
     const isSpellingCategory = (m) => m.rule?.category?.id === "TYPOS";
     const flaggedWord = (m) => (m.context?.text || "").substr(m.context?.offset ?? 0, m.context?.length ?? 0);
     const looksLikeProperNounOrAcronym = (word) => /^[A-Z]/.test(word) || /^[A-Z]{2,}$/.test(word);
+    const isKnownTerm = (word) => KNOWN_TERMS.has(word.toLowerCase());
+    // A "merged words" issue (e.g. "pmFriday") isn't a misspelling — both
+    // halves are spelled correctly, they're just missing a space. The
+    // suggested fix in these cases is just the same letters with a space
+    // added back in, which is how we can tell the two apart from a real typo.
+    const isJustMissingSpace = (m) => {
+      const word = flaggedWord(m);
+      const suggestion = m.replacements?.[0]?.value || "";
+      return suggestion.replace(/\s+/g, "").toLowerCase() === word.replace(/\s+/g, "").toLowerCase() && suggestion.includes(" ");
+    };
 
     const relevant = matches
       .filter((m) => isRepeatedWordRule(m) || isSpellingCategory(m))
       .filter((m) => isRepeatedWordRule(m) || !looksLikeProperNounOrAcronym(flaggedWord(m)))
+      .filter((m) => isRepeatedWordRule(m) || !isKnownTerm(flaggedWord(m)))
+      .filter((m) => !isJustMissingSpace(m))
       .slice(0, 12);
     if (relevant.length === 0) return "No content issues found.";
 

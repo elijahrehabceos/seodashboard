@@ -73,7 +73,7 @@ function PageCard({ page }) {
             {warning > 0 && <span style={{ color: "#cda158", fontWeight: 700, marginRight: 10 }}>{warning} warning</span>}
             {page.brokenLinks?.length > 0 && <span style={{ color: "#dc2626", fontWeight: 700, marginRight: 10 }}>{page.brokenLinks.length} broken link{page.brokenLinks.length > 1 ? "s" : ""}</span>}
             {page.shortcodeArtifacts?.length > 0 && <span style={{ color: "#dc2626", fontWeight: 700, marginRight: 10 }}>{page.shortcodeArtifacts.length} shortcode artifact{page.shortcodeArtifacts.length > 1 ? "s" : ""}</span>}
-            {hasContentIssues && <span style={{ color: "#cda158", fontWeight: 700 }}>content issues found</span>}
+            {hasContentIssues && <span style={{ color: "#cda158", fontWeight: 700 }}>for content review</span>}
             {critical === 0 && warning === 0 && !page.brokenLinks?.length && !page.shortcodeArtifacts?.length && !hasContentIssues && (
               <span style={{ color: "#16a34a", fontWeight: 700 }}>All clear</span>
             )}
