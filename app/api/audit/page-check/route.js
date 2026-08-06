@@ -179,8 +179,19 @@ async function reviewContentWithLanguageTool(bodyText) {
     const matches = json.matches || [];
     if (matches.length === 0) return "No content issues found.";
 
-    // Skip style-only nitpicks; keep real spelling/grammar problems.
-    const relevant = matches.filter((m) => m.rule?.issueType !== "style").slice(0, 12);
+    // Skip style-only nitpicks. Also skip anything flagging a capitalized
+    // or ALL-CAPS word — that's almost always a proper noun, brand name, or
+    // industry acronym LanguageTool's generic dictionary doesn't recognize
+    // (e.g. "Softwave", "Tribeca", "APTA"), not a real error. Genuine
+    // lowercase typos and repeated-word issues still get flagged normally.
+    const isRepeatedWordRule = (m) => /repeated a word|word repeat/i.test(m.message || "");
+    const flaggedWord = (m) => (m.context?.text || "").substr(m.context?.offset ?? 0, m.context?.length ?? 0);
+    const looksLikeProperNounOrAcronym = (word) => /^[A-Z]/.test(word) || /^[A-Z]{2,}$/.test(word);
+
+    const relevant = matches
+      .filter((m) => m.rule?.issueType !== "style")
+      .filter((m) => isRepeatedWordRule(m) || !looksLikeProperNounOrAcronym(flaggedWord(m)))
+      .slice(0, 12);
     if (relevant.length === 0) return "No content issues found.";
 
     return relevant
