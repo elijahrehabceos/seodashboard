@@ -110,6 +110,18 @@ create table if not exists generated_blogs (
 );
 alter table generated_blogs enable row level security;
 
+create table if not exists ai_mention_month_snapshots (
+  id bigserial primary key,
+  client_slug text references clients(slug) on delete cascade,
+  engine text not null,
+  prompt text,
+  mentioned boolean default false,
+  month_code text not null,   -- e.g. '2026-07'
+  created_at timestamptz default now(),
+  unique (client_slug, engine, month_code)
+);
+alter table ai_mention_month_snapshots enable row level security;
+
 create table if not exists keyword_week_snapshots (
   id bigserial primary key,
   client_slug text references clients(slug) on delete cascade,
@@ -143,6 +155,7 @@ create policy "public read refresh_log" on refresh_log for select using (true);
 create policy "public read client_insights" on client_insights for select using (true);
 create policy "public read search_engines" on search_engines for select using (true);
 create policy "public read keyword_week_snapshots" on keyword_week_snapshots for select using (true);
+create policy "public read ai_mention_month_snapshots" on ai_mention_month_snapshots for select using (true);
 create policy "public read keyword_month_snapshots" on keyword_month_snapshots for select using (true);
 create policy "public read priority_recommendations" on priority_recommendations for select using (true);
 create policy "public read generated_blogs" on generated_blogs for select using (true);

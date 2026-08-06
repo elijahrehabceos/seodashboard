@@ -367,6 +367,22 @@ async function refreshAiVisibility(client) {
       .from("ai_visibility")
       .upsert(rows, { onConflict: "client_slug,engine" });
     if (error) throw error;
+
+    // Log this month into the permanent history table too — never
+    // overwritten, so months from now you can see exactly when a brand
+    // started (or stopped) showing up on each AI engine.
+    const monthCode = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
+    const historyRows = rows.map((r) => ({
+      client_slug: r.client_slug,
+      engine: r.engine,
+      prompt: r.prompt,
+      mentioned: r.mentioned,
+      month_code: monthCode,
+    }));
+    const { error: histError } = await supabase
+      .from("ai_mention_month_snapshots")
+      .upsert(historyRows, { onConflict: "client_slug,engine,month_code" });
+    if (histError) console.error(`[AI history log fail] ${client.clinic_name}:`, histError.message);
   }
   return rows.length;
 }
