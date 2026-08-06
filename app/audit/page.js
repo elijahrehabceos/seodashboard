@@ -29,7 +29,6 @@ function PageCard({ page }) {
 
   const critical = page.checks.filter((c) => c.severity === "critical").length;
   const warning = page.checks.filter((c) => c.severity === "warning").length;
-  const hasContentIssues = page.contentIssues && !page.contentIssues.toLowerCase().includes("no content issues");
 
   return (
     <div style={{ background: "#fff", border: "1px solid #e8e8e8", borderRadius: 12, marginBottom: 16, overflow: "hidden" }}>
@@ -73,8 +72,7 @@ function PageCard({ page }) {
             {warning > 0 && <span style={{ color: "#cda158", fontWeight: 700, marginRight: 10 }}>{warning} warning</span>}
             {page.brokenLinks?.length > 0 && <span style={{ color: "#dc2626", fontWeight: 700, marginRight: 10 }}>{page.brokenLinks.length} broken link{page.brokenLinks.length > 1 ? "s" : ""}</span>}
             {page.shortcodeArtifacts?.length > 0 && <span style={{ color: "#dc2626", fontWeight: 700, marginRight: 10 }}>{page.shortcodeArtifacts.length} shortcode artifact{page.shortcodeArtifacts.length > 1 ? "s" : ""}</span>}
-            {hasContentIssues && <span style={{ color: "#cda158", fontWeight: 700 }}>for content review</span>}
-            {critical === 0 && warning === 0 && !page.brokenLinks?.length && !page.shortcodeArtifacts?.length && !hasContentIssues && (
+            {critical === 0 && warning === 0 && !page.brokenLinks?.length && !page.shortcodeArtifacts?.length && (
               <span style={{ color: "#16a34a", fontWeight: 700 }}>All clear</span>
             )}
           </div>
@@ -121,23 +119,6 @@ function PageCard({ page }) {
                   {s}
                 </div>
               ))}
-            </div>
-          )}
-
-          {page.contentIssues && (
-            <div>
-              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: ".1em", color: hasContentIssues ? "#cda158" : "#16a34a", textTransform: "uppercase", marginBottom: 8 }}>
-                Content Review
-              </div>
-              <p style={{ fontSize: 13, color: "#444", lineHeight: 1.7, whiteSpace: "pre-line" }}>{page.contentIssues}</p>
-            </div>
-          )}
-          {!page.contentIssues && (
-            <div>
-              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: ".1em", color: "#999", textTransform: "uppercase", marginBottom: 8 }}>
-                Content Review
-              </div>
-              <p style={{ fontSize: 13, color: "#999" }}>Not available (Claude API key may not be configured).</p>
             </div>
           )}
         </div>

@@ -181,70 +181,6 @@ async function checkLinks($, pageUrl) {
   return results.filter((r) => !r.ok && r.status !== 429);
 }
 
-async function reviewContentWithLanguageTool(bodyText) {
-  const sample = bodyText.slice(0, 15000); // LanguageTool's free tier caps around 20k chars
-  if (!sample.trim()) return null;
-
-  try {
-    const params = new URLSearchParams({
-      text: sample,
-      language: "en-US",
-      enabledOnly: "false",
-    });
-    const res = await fetch("https://api.languagetool.org/v2/check", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: params,
-    });
-    if (!res.ok) return null;
-    const json = await res.json();
-    const matches = json.matches || [];
-    if (matches.length === 0) return "No content issues found.";
-
-    // Known real terms LanguageTool's generic dictionary doesn't recognize
-    // (physical therapy / medical vocabulary). This list will need to grow
-    // over time — a generic spell-checker can't know every specialized term.
-    const KNOWN_TERMS = new Set([
-      "myofascia", "myofascial", "proprioception", "proprioceptive", "kinesiology",
-      "subluxation", "dorsiflexion", "plantarflexion", "tenosynovitis", "osteoarthritis",
-      "rehabilitative", "biomechanics", "orthotics",
-    ]);
-
-    const isRepeatedWordRule = (m) => /repeated a word|word repeat/i.test(m.message || "");
-    const isSpellingCategory = (m) => m.rule?.category?.id === "TYPOS";
-    const flaggedWord = (m) => (m.context?.text || "").substr(m.context?.offset ?? 0, m.context?.length ?? 0);
-    const looksLikeProperNounOrAcronym = (word) => /^[A-Z]/.test(word) || /^[A-Z]{2,}$/.test(word);
-    const isKnownTerm = (word) => KNOWN_TERMS.has(word.toLowerCase());
-    // A "merged words" issue (e.g. "pmFriday") isn't a misspelling — both
-    // halves are spelled correctly, they're just missing a space. The
-    // suggested fix in these cases is just the same letters with a space
-    // added back in, which is how we can tell the two apart from a real typo.
-    const isJustMissingSpace = (m) => {
-      const word = flaggedWord(m);
-      const suggestion = m.replacements?.[0]?.value || "";
-      return suggestion.replace(/\s+/g, "").toLowerCase() === word.replace(/\s+/g, "").toLowerCase() && suggestion.includes(" ");
-    };
-
-    const relevant = matches
-      .filter((m) => isRepeatedWordRule(m) || isSpellingCategory(m))
-      .filter((m) => isRepeatedWordRule(m) || !looksLikeProperNounOrAcronym(flaggedWord(m)))
-      .filter((m) => isRepeatedWordRule(m) || !isKnownTerm(flaggedWord(m)))
-      .filter((m) => !isJustMissingSpace(m))
-      .slice(0, 12);
-    if (relevant.length === 0) return "No content issues found.";
-
-    return relevant
-      .map((m) => {
-        const context = m.context?.text || "";
-        const suggestion = m.replacements?.[0]?.value;
-        return `"${context.trim()}"${suggestion ? ` — suggested fix: "${suggestion}"` : ""} (${m.message})`;
-      })
-      .join("\n");
-  } catch {
-    return null;
-  }
-}
-
 export async function POST(req) {
   try {
     const { url: pageUrl } = await req.json();
@@ -256,10 +192,7 @@ export async function POST(req) {
     }
 
     const { checks, bodyText, $ } = runTechnicalChecks(page.finalUrl || pageUrl, page.text);
-    const [brokenLinks, contentIssues] = await Promise.all([
-      checkLinks($, page.finalUrl || pageUrl),
-      reviewContentWithLanguageTool(bodyText),
-    ]);
+    const brokenLinks = await checkLinks($, page.finalUrl || pageUrl);
     const shortcodeArtifacts = findShortcodeArtifacts(bodyText);
 
     return Response.json({
@@ -267,7 +200,6 @@ export async function POST(req) {
       checks,
       brokenLinks,
       shortcodeArtifacts,
-      contentIssues,
     });
   } catch (err) {
     console.error(err);
