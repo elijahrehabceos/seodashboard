@@ -21,8 +21,8 @@ jobs:
 
       - name: Run refresh script
         env:
-          GOOGLE_SHEET_CSV_URL: ${{ secrets.GOOGLE_SHEET_CSV_URL }}
-          SE_RANKING_API_KEY: ${{ secrets.SE_RANKING_API_KEY }}
+          GOOGLE_SHEET_KEYWORDS_CSV_URL: ${{ secrets.GOOGLE_SHEET_KEYWORDS_CSV_URL }}
+          GOOGLE_SHEET_AI_CSV_URL: ${{ secrets.GOOGLE_SHEET_AI_CSV_URL }}
           LOCAL_FALCON_API_KEY: ${{ secrets.LOCAL_FALCON_API_KEY }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

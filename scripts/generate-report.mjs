@@ -349,7 +349,7 @@ monthly SEO report. Data: ${JSON.stringify(
 ${ai
   .map(
     (a) => `  <div class="ai-llm-card">
-    <div class="ai-llm-card-name ${a.mentioned ? "green" : "gold"}">${esc(a.engine)}</div>
+    <div class="ai-llm-card-name ${a.mentioned ? "green" : "gold"}">${esc(a.location_label || a.engine)}</div>
     <div class="ai-llm-card-pct ${a.mentioned ? "green" : "gold"}">${a.mentioned ? "Mentioned" : "0%"}</div>
     <div class="ai-llm-card-pos">${a.mentioned ? "Mentioned in tracked prompt" : "Not mentioned in tracked prompt"}</div>
   </div>`
@@ -364,7 +364,7 @@ ${
   ${ai
     .map(
       (a) => `<div class="ai-qb-row"><span class="ai-qb-dot ${a.mentioned ? "mentioned" : "not-mentioned"}"></span><span class="ai-qb-llm">${esc(
-        a.engine
+        a.location_label || a.engine
       )}</span><span class="ai-qb-pos ${a.mentioned ? "mentioned" : "dim"}">${
         a.mentioned ? "Mentioned in tracked prompt" : "Not Yet Ranking"
       }</span></div>`

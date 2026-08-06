@@ -267,7 +267,7 @@ export default async function ClientPage({ params }) {
             <div className="rd-ai-llm-grid">
               {ai.map((a) => (
                 <div key={a.id} className="rd-ai-llm-card">
-                  <div className={`rd-ai-llm-card-name ${a.mentioned ? "green" : "gold"}`}>{a.engine.replace(/_/g, " ")}</div>
+                  <div className={`rd-ai-llm-card-name ${a.mentioned ? "green" : "gold"}`}>{(a.location_label || a.engine).replace(/_/g, " ")}</div>
                   <div className={`rd-ai-llm-card-pct ${a.mentioned ? "green" : "gold"}`}>{a.mentioned ? "Mentioned" : "0%"}</div>
                   <div className="rd-ai-llm-card-pos">{a.mentioned ? "Mentioned in tracked prompt" : "Not mentioned in tracked prompt"}</div>
                   {a.prompt && (

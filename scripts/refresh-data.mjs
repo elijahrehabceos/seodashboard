@@ -1,22 +1,23 @@
 // Daily refresh script — run by GitHub Actions on a cron schedule.
-// Pulls keyword rankings from a manually-updated Google Sheet (published to
-// web as CSV — SE Ranking's API was dropped due to recurring billing
-// issues), AI visibility from SE Ranking (still active), and local pack
-// data from Local Falcon, then writes everything into Supabase.
+// Pulls keyword rankings AND AI visibility from two dedicated Google Sheet
+// tabs (published to web as CSV — this replaces both SE Ranking's rank
+// tracking AND its AI Result Tracker). Local pack data still comes from
+// Local Falcon. Everything gets written into Supabase.
 //
 // Required env vars (set as GitHub Actions secrets):
-//   GOOGLE_SHEET_CSV_URL
-//   SE_RANKING_API_KEY   (still used for AI Visibility only)
+//   GOOGLE_SHEET_KEYWORDS_CSV_URL
+//   GOOGLE_SHEET_AI_CSV_URL
 //   LOCAL_FALCON_API_KEY
 //   SUPABASE_URL
 //   SUPABASE_SERVICE_ROLE_KEY
+//   ANTHROPIC_API_KEY (optional)
 
 import { createClient } from "@supabase/supabase-js";
 import Papa from "papaparse";
-import clients from "../data/clients.json" with { type: "json" };
+import clientsSeed from "../data/clients.json" with { type: "json" };
 
-const GOOGLE_SHEET_CSV_URL = process.env.GOOGLE_SHEET_CSV_URL;
-const SE_RANKING_KEY = process.env.SE_RANKING_API_KEY;
+const GOOGLE_SHEET_KEYWORDS_CSV_URL = process.env.GOOGLE_SHEET_KEYWORDS_CSV_URL;
+const GOOGLE_SHEET_AI_CSV_URL = process.env.GOOGLE_SHEET_AI_CSV_URL;
 const LOCAL_FALCON_KEY = process.env.LOCAL_FALCON_API_KEY;
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -29,44 +30,11 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
-const SE_BASE = "https://api.seranking.com/v1/project-management";
 const LF_BASE = "https://api.localfalcon.com";
 
 function normalizeName(s) {
   return (s || "").toLowerCase().trim().replace(/\s+/g, " ");
 }
-
-// STOPGAP: the ranking sheet is shared with other team members, and their
-// clients live in the same tab. The real marker for "this is one of ours"
-// is a gold/blue cell background color, which the published CSV strips out
-// entirely (CSV has no formatting). Until we wire up the Sheets API to read
-// real colors, we allowlist by the exact owner names known to be ours.
-const ALLOWED_OWNER_NAMES = new Set(
-  [
-    "Anthony Avila", "Betty DeLass", "Giovanna Bossio", "Jonson Y", "Kristian Marcial",
-    "Shaden Ghattas", "Shelly Coffman", "Zak Hill", "Carlo Sayo", "Paul Vidal",
-    "Isaac Ervin", "Amy Robinson", "Dan Carroll", "Jordan Zuccarelli", "Natalie Tilton",
-    "Darin Deaton | Trey Taylor", "Blase Strobl", "Sonya Brooks", "Jarrod Matthew",
-    "Matthew Nelson", "Amy Wunsch", "Sergio Martinez", "Michael Chua", "Kenny Holder",
-    "Brian Kent", "Taci Wilson", "Brad Conder", "Cameron Dennis", "Hayley Apiscopa",
-    "John Talty", "Jack Wong", "Mark Anthony Rodriguez", "Seth Greiner",
-    "John Mark Chesney", "Mike Minett", "Neil Holmes", "Sarah Crawford",
-    "Tejal Ramaiya", "Alaina Marino", "Daniel Mills", "Bryan Ladd", "Adam Wolf",
-    "Ryan & Clay Ardoin", "Ken Clark", "Beth Winkler", "Karl Kolbeck",
-    "Lindsey Bellcase", "Ryan Godfrey", "Theo Peterson & Kezia Peterson",
-    "Kathryn Cieniewicz", "Leslie Wakefield", "Eric Gonsalves / Brianna Landry",
-    "Taylor Holland", "Jordan McCormack", "Avi Singh",
-    "Dan Wrzosek", "Sean McInerney",
-  ].map(normalizeName)
-);
-
-// Backup path by clinic name, in case an owner name doesn't match exactly
-// (nickname, middle initial, extra space, etc.) — either match is enough.
-const ALLOWED_COMPANY_NAMES = new Set(
-  ["Chehalem Physical Therapy", "Elevate Physical Therapy and Fitness", "Streamline Performance Physical Therapy"].map(
-    normalizeName
-  )
-);
 
 function todayISO() {
   return new Date().toISOString().slice(0, 10);
@@ -94,51 +62,69 @@ function parsePosition(raw) {
   return isFinite(n) && n > 0 ? Math.round(n) : null;
 }
 
-// Fetches the published sheet and returns rows keyed by normalized company name.
-// Sheet layout (fixed columns, then repeating groups of 3 for extra locations):
-//   0: Client Name (owner)   1: GSC   2: Top 5 AI   3: 150/mo
-//   4: Main Keyword   5: Organic #1   6: Maps #1   7: Company Name
-//   8+: [Location Keyword, Organic #, Maps #] repeating, up to 17 more groups
-async function fetchSheetData() {
-  if (!GOOGLE_SHEET_CSV_URL) {
-    console.error("GOOGLE_SHEET_CSV_URL not set — skipping ranking sheet refresh entirely.");
-    return new Map();
+function parseYN(raw) {
+  const s = String(raw ?? "").trim().toUpperCase();
+  if (s === "Y") return true;
+  if (s === "N") return false;
+  return null; // blank / unrecognized — leave unset rather than guess
+}
+
+async function fetchCsv(url, label) {
+  if (!url) {
+    console.error(`${label} URL not set — skipping.`);
+    return [];
   }
-  const res = await fetch(GOOGLE_SHEET_CSV_URL);
-  if (!res.ok) throw new Error(`Failed to fetch ranking sheet: ${res.status}`);
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Failed to fetch ${label}: ${res.status}`);
   const text = await res.text();
-  const parsed = Papa.parse(text.trim(), { header: false, skipEmptyLines: true });
-  const rows = parsed.data.slice(1); // drop header row — column names aren't unique enough to trust
+  const parsed = Papa.parse(text.trim(), { header: true, skipEmptyLines: true });
+  return parsed.data;
+}
 
-  const byCompany = new Map();
+// This is now Elijah's own dedicated sheet (not shared with other team
+// members), so no more owner-name allowlisting needed — any Clinic Name in
+// here is one of ours.
+async function fetchKeywordSheet() {
+  const rows = await fetchCsv(GOOGLE_SHEET_KEYWORDS_CSV_URL, "Keyword Rankings sheet");
+  const byClinic = new Map();
   for (const row of rows) {
-    const companyName = (row[7] || "").trim();
-    if (!companyName) continue; // rows with no Company Name aren't part of our roster
-    const ownerName = (row[0] || "").trim();
-    const ownerOk = ALLOWED_OWNER_NAMES.has(normalizeName(ownerName));
-    const companyOk = ALLOWED_COMPANY_NAMES.has(normalizeName(companyName));
-    if (!ownerOk && !companyOk) continue; // not one of our clients — shared sheet has other team members' clients too
-
-    const entries = [];
-    const mainKeyword = (row[4] || "").trim();
-    if (mainKeyword) {
-      entries.push({ keyword: mainKeyword, organic: parsePosition(row[5]), maps: parsePosition(row[6]), isPrimary: true, locationLabel: null });
-    }
-    for (let i = 0; i < 17; i++) {
-      const base = 8 + i * 3;
-      const locKeyword = (row[base] || "").trim();
-      if (!locKeyword) continue;
-      entries.push({
-        keyword: locKeyword,
-        organic: parsePosition(row[base + 1]),
-        maps: parsePosition(row[base + 2]),
-        isPrimary: false,
-        locationLabel: locKeyword,
+    const clinicName = (row["Clinic Name"] || "").trim();
+    if (!clinicName) continue;
+    const key = normalizeName(clinicName);
+    if (!byClinic.has(key)) {
+      byClinic.set(key, {
+        clinicName,
+        domain: (row["Domain"] || "").trim(),
+        ownerName: (row["Owner Name"] || "").trim(),
+        entries: [],
       });
     }
-    byCompany.set(normalizeName(companyName), { companyName, ownerName, entries });
+    byClinic.get(key).entries.push({
+      keyword: (row["Keyword"] || "").trim(),
+      locationLabel: (row["Location"] || "").trim() || null,
+      isPrimary: (row["Primary? (Y/N)"] || "").trim().toUpperCase() === "Y",
+      organic: parsePosition(row["Organic Position"]),
+      maps: parsePosition(row["Maps Position"]),
+    });
   }
-  return byCompany;
+  return byClinic;
+}
+
+async function fetchAiSheet() {
+  const rows = await fetchCsv(GOOGLE_SHEET_AI_CSV_URL, "AI Visibility sheet");
+  const byClinic = new Map();
+  for (const row of rows) {
+    const clinicName = (row["Clinic Name"] || "").trim();
+    if (!clinicName) continue;
+    const key = normalizeName(clinicName);
+    if (!byClinic.has(key)) byClinic.set(key, []);
+    byClinic.get(key).push({
+      locationLabel: (row["Location"] || "").trim() || null,
+      prompt: (row["Tracked Prompt"] || "").trim() || null,
+      mentioned: parseYN(row["Mentioned This Month? (Y/N)"]),
+    });
+  }
+  return byClinic;
 }
 
 function slugify(text) {
@@ -151,17 +137,17 @@ function slugify(text) {
     .slice(0, 60);
 }
 
-// Any company in the sheet that doesn't match an existing client becomes a
+// Any clinic in the sheet that doesn't match an existing client becomes a
 // new client automatically — no manual "add this client" step needed.
-function buildFullClientList(sheetData, existingClients) {
+function buildFullClientList(keywordSheet, existingClients) {
   const matchedKeys = new Set();
   for (const client of existingClients) {
     const norm = normalizeName(client.clinic_name);
-    if (sheetData.has(norm)) {
+    if (keywordSheet.has(norm)) {
       matchedKeys.add(norm);
       continue;
     }
-    for (const key of sheetData.keys()) {
+    for (const key of keywordSheet.keys()) {
       if (key.includes(norm) || norm.includes(key)) {
         matchedKeys.add(key);
         break;
@@ -170,13 +156,13 @@ function buildFullClientList(sheetData, existingClients) {
   }
 
   const autoDetected = [];
-  for (const [key, { companyName, ownerName }] of sheetData) {
+  for (const [key, { clinicName, domain, ownerName }] of keywordSheet) {
     if (matchedKeys.has(key)) continue;
     autoDetected.push({
-      slug: slugify(companyName),
-      clinic_name: companyName,
+      slug: slugify(clinicName),
+      clinic_name: clinicName,
       owner_name: ownerName || "Unknown",
-      domain: "",
+      domain: domain || "",
       site_id: null,
       local_falcon_place_id: null,
       auto_detected: true,
@@ -194,20 +180,18 @@ function buildFullClientList(sheetData, existingClients) {
   return [...existingClients, ...autoDetected];
 }
 
-function findSheetEntriesForClient(sheetData, client) {
+function findInSheet(sheetMap, client) {
   const norm = normalizeName(client.clinic_name);
-  if (sheetData.has(norm)) return sheetData.get(norm).entries;
-  // Fuzzy fallback — handles cases like "Avi Singh - Precision Physiotherapy..."
-  // in the sheet vs "Precision Physiotherapy..." in our records.
-  for (const [key, value] of sheetData) {
-    if (key.includes(norm) || norm.includes(key)) return value.entries;
+  if (sheetMap.has(norm)) return sheetMap.get(norm);
+  for (const [key, value] of sheetMap) {
+    if (key.includes(norm) || norm.includes(key)) return value;
   }
   return null;
 }
 
-async function refreshKeywordRankingsFromSheet(client, sheetData) {
-  const entries = findSheetEntriesForClient(sheetData, client);
-  if (!entries || entries.length === 0) return 0;
+async function refreshKeywordRankingsFromSheet(client, keywordSheet) {
+  const clientData = findInSheet(keywordSheet, client);
+  if (!clientData || !clientData.entries.length) return 0;
 
   const weekStart = mondayOfCurrentWeek();
   const today = todayISO();
@@ -220,7 +204,8 @@ async function refreshKeywordRankingsFromSheet(client, sheetData) {
   const existingMap = new Map((existingRows || []).map((r) => [`${r.keyword}::${r.ranking_type}`, r.position]));
 
   const rows = [];
-  for (const entry of entries) {
+  for (const entry of clientData.entries) {
+    if (!entry.keyword) continue;
     for (const [rankingType, pos] of [["organic", entry.organic], ["maps", entry.maps]]) {
       if (pos === null && !existingMap.has(`${entry.keyword}::${rankingType}`)) continue; // never seen and still unranked — skip noise
       const prevPos = existingMap.get(`${entry.keyword}::${rankingType}`);
@@ -270,19 +255,45 @@ async function refreshKeywordRankingsFromSheet(client, sheetData) {
   return rows.length;
 }
 
-async function seGet(path, params = {}) {
-  const url = new URL(`${SE_BASE}${path}`);
-  Object.entries(params).forEach(([k, v]) => {
-    if (v !== undefined && v !== null) url.searchParams.set(k, v);
-  });
-  const res = await fetch(url, {
-    headers: { Authorization: `Token ${SE_RANKING_KEY}` },
-  });
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(`SE Ranking ${path} failed: ${res.status} ${body}`);
+async function refreshAiVisibilityFromSheet(client, aiSheet) {
+  const entries = findInSheet(aiSheet, client);
+  if (!entries || !entries.length) return 0;
+
+  const now = new Date();
+  const monthCode = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
+
+  const rows = entries
+    .filter((e) => e.mentioned !== null) // skip blanks rather than guess
+    .map((e) => ({
+      client_slug: client.slug,
+      engine: "AI Search", // the sheet doesn't distinguish specific engines — one combined check per location
+      location_label: e.locationLabel,
+      prompt: e.prompt,
+      mentioned: e.mentioned,
+      mention_percent: e.mentioned ? 100 : 0,
+      last_checked: todayISO(),
+      updated_at: new Date().toISOString(),
+    }));
+
+  if (rows.length) {
+    const { error } = await supabase
+      .from("ai_visibility")
+      .upsert(rows, { onConflict: "client_slug,engine,location_label" });
+    if (error) throw error;
+
+    const historyRows = rows.map((r) => ({
+      client_slug: r.client_slug,
+      engine: r.engine,
+      prompt: r.prompt,
+      mentioned: r.mentioned,
+      month_code: monthCode,
+    }));
+    const { error: histError } = await supabase
+      .from("ai_mention_month_snapshots")
+      .upsert(historyRows, { onConflict: "client_slug,engine,month_code" });
+    if (histError) console.error(`[AI history log fail] ${client.clinic_name}:`, histError.message);
   }
-  return res.json();
+  return rows.length;
 }
 
 async function lfPost(path, form = {}) {
@@ -297,94 +308,6 @@ async function lfPost(path, form = {}) {
     throw new Error(`Local Falcon ${path} failed: ${res.status} ${json?.message || ""}`);
   }
   return json;
-}
-
-async function refreshAiVisibility(client) {
-  let engines;
-  try {
-    engines = await seGet("/airt/llm", { site_id: client.site_id });
-  } catch (e) {
-    // No brand/AI tracking configured for this client — skip quietly.
-    return 0;
-  }
-  if (!Array.isArray(engines) || engines.length === 0) return 0;
-
-  const dateTo = todayISO();
-  // Calendar month, not a rolling window — matches the report rule:
-  // "mentioned once in the month = mentioned", tied to the actual month,
-  // not just the last 30 days.
-  const now = new Date();
-  const dateFrom = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1))
-    .toISOString()
-    .slice(0, 10);
-
-  const rows = [];
-  for (const engine of engines) {
-    let rankings;
-    try {
-      rankings = await seGet("/airt/prompts/rankings", {
-        site_id: client.site_id,
-        llm_id: engine.id,
-        date_from: dateFrom,
-        date_to: dateTo,
-        limit: 1000,
-      });
-    } catch (e) {
-      continue;
-    }
-
-    let mentionedAtLeastOnce = false;
-    let totalChecks = 0;
-    let mentionedChecks = 0;
-    let promptText = null;
-
-    for (const item of rankings.items || []) {
-      if (!promptText) promptText = item.keyword || null; // the tracked prompt itself
-      for (const p of item.positions || []) {
-        if (p.mention_position === null || p.mention_position === undefined) continue; // no AI block that day
-        totalChecks += 1;
-        if (p.mention_position > 0) {
-          mentionedAtLeastOnce = true;
-          mentionedChecks += 1;
-        }
-      }
-    }
-
-    rows.push({
-      client_slug: client.slug,
-      engine: engine.base_name,
-      prompt: promptText,
-      mentioned: mentionedAtLeastOnce,
-      mention_percent: totalChecks ? Math.round((mentionedChecks / totalChecks) * 100) : null,
-      link_percent: null,
-      last_checked: dateTo,
-      updated_at: new Date().toISOString(),
-    });
-  }
-
-  if (rows.length) {
-    const { error } = await supabase
-      .from("ai_visibility")
-      .upsert(rows, { onConflict: "client_slug,engine" });
-    if (error) throw error;
-
-    // Log this month into the permanent history table too — never
-    // overwritten, so months from now you can see exactly when a brand
-    // started (or stopped) showing up on each AI engine.
-    const monthCode = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
-    const historyRows = rows.map((r) => ({
-      client_slug: r.client_slug,
-      engine: r.engine,
-      prompt: r.prompt,
-      mentioned: r.mentioned,
-      month_code: monthCode,
-    }));
-    const { error: histError } = await supabase
-      .from("ai_mention_month_snapshots")
-      .upsert(historyRows, { onConflict: "client_slug,engine,month_code" });
-    if (histError) console.error(`[AI history log fail] ${client.clinic_name}:`, histError.message);
-  }
-  return rows.length;
 }
 
 async function refreshLocalPack(client) {
@@ -606,27 +529,34 @@ async function main() {
   let failCount = 0;
   const errors = [];
 
-  let sheetData;
+  let keywordSheet, aiSheet;
   try {
-    sheetData = await fetchSheetData();
-    console.log(`Loaded ranking sheet: ${sheetData.size} clients found in sheet.`);
+    keywordSheet = await fetchKeywordSheet();
+    console.log(`Loaded Keyword Rankings sheet: ${keywordSheet.size} clients found.`);
   } catch (err) {
-    console.error("Failed to load ranking sheet:", err.message);
-    sheetData = new Map();
+    console.error("Failed to load Keyword Rankings sheet:", err.message);
+    keywordSheet = new Map();
+  }
+  try {
+    aiSheet = await fetchAiSheet();
+    console.log(`Loaded AI Visibility sheet: ${aiSheet.size} clients found.`);
+  } catch (err) {
+    console.error("Failed to load AI Visibility sheet:", err.message);
+    aiSheet = new Map();
   }
 
-  const fullClientList = buildFullClientList(sheetData, clients);
+  const fullClientList = buildFullClientList(keywordSheet, clientsSeed);
 
   for (const client of fullClientList) {
     try {
       await upsertClientRecord(client);
-      const kwCount = await refreshKeywordRankingsFromSheet(client, sheetData);
-      const aiCount = await refreshAiVisibility(client);
+      const kwCount = await refreshKeywordRankingsFromSheet(client, keywordSheet);
+      const aiCount = await refreshAiVisibilityFromSheet(client, aiSheet);
       const lfCount = await refreshLocalPack(client);
       await generateInsight(client);
       await generatePriorityRecommendation(client);
       console.log(
-        `[ok] ${client.clinic_name}: ${kwCount} keyword rows, ${aiCount} AI engines, ${lfCount} local pack rows`
+        `[ok] ${client.clinic_name}: ${kwCount} keyword rows, ${aiCount} AI rows, ${lfCount} local pack rows`
       );
       successCount += 1;
     } catch (err) {
