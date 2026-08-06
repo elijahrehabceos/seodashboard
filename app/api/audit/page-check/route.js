@@ -92,14 +92,17 @@ function runTechnicalChecks(url, html) {
 }
 
 function findShortcodeArtifacts(bodyText) {
-  // Real shortcodes follow WordPress convention: lowercase tag name,
-  // optionally with attr="value" pairs or a self-closing slash. This
-  // deliberately excludes normal bracketed text like "[Read More]",
-  // "[1]" citations, or Cloudflare's "[email protected]" obfuscation,
-  // none of which are actually broken shortcodes.
+  // Real shortcodes/template artifacts follow predictable patterns. Deliberately
+  // conservative to avoid flagging normal text: square-bracket shortcodes
+  // require a lowercase WordPress-style tag name (excludes "[Read More]",
+  // "[1]" citations, Cloudflare's "[email protected]"); parenthesis patterns
+  // require a snake_case function-call shape (excludes normal English
+  // parentheticals like phone numbers or asides).
   const patterns = [
-    /\[\/?[a-z][a-z0-9_-]{2,}(?:\s+[a-z_-]+=(?:"[^"]*"|'[^']*'))*\s*\/?\]/g,
-    /\{\{[a-z_][a-z0-9_.]*\}\}/gi, // unrendered template variables like {{first_name}}
+    /\[\/?[a-z][a-z0-9_-]{2,}(?:\s+[a-z_-]+=(?:"[^"]*"|'[^']*'))*\s*\/?\]/g, // [shortcode foo="bar"]
+    /\{\{[a-z_][a-z0-9_.]*\}\}/gi, // {{template_var}}
+    /\{[a-z_][a-z0-9_.]*\}/gi, // {first_name} — single-brace placeholder
+    /\b[a-z][a-z0-9]*_[a-z0-9_]*\([^()]*\)/g, // snake_case_function(args) — leftover function calls
   ];
   const found = new Set();
   for (const re of patterns) {
@@ -179,17 +182,16 @@ async function reviewContentWithLanguageTool(bodyText) {
     const matches = json.matches || [];
     if (matches.length === 0) return "No content issues found.";
 
-    // Skip style-only nitpicks. Also skip anything flagging a capitalized
-    // or ALL-CAPS word — that's almost always a proper noun, brand name, or
-    // industry acronym LanguageTool's generic dictionary doesn't recognize
-    // (e.g. "Softwave", "Tribeca", "APTA"), not a real error. Genuine
-    // lowercase typos and repeated-word issues still get flagged normally.
+    // Only genuine spelling mistakes (LanguageTool's "TYPOS" category) plus
+    // real repeated-word issues — never punctuation/typography/style
+    // nitpicks like double-dots, hyphen-vs-en-dash, or spacing preferences.
     const isRepeatedWordRule = (m) => /repeated a word|word repeat/i.test(m.message || "");
+    const isSpellingCategory = (m) => m.rule?.category?.id === "TYPOS";
     const flaggedWord = (m) => (m.context?.text || "").substr(m.context?.offset ?? 0, m.context?.length ?? 0);
     const looksLikeProperNounOrAcronym = (word) => /^[A-Z]/.test(word) || /^[A-Z]{2,}$/.test(word);
 
     const relevant = matches
-      .filter((m) => m.rule?.issueType !== "style")
+      .filter((m) => isRepeatedWordRule(m) || isSpellingCategory(m))
       .filter((m) => isRepeatedWordRule(m) || !looksLikeProperNounOrAcronym(flaggedWord(m)))
       .slice(0, 12);
     if (relevant.length === 0) return "No content issues found.";
