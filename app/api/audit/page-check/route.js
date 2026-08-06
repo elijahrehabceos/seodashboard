@@ -131,12 +131,31 @@ async function checkOneLink(link, attempt = 0) {
   return { url: link, status: res.status, ok: res.ok };
 }
 
+// Social platforms use aggressive bot detection (TLS fingerprinting, JS
+// challenges) that blocks simple automated requests even when the actual
+// page is completely fine — no realistic User-Agent header gets around
+// this. Rather than falsely flag these as broken, we just don't check them.
+const SKIP_LINK_CHECK_DOMAINS = [
+  "facebook.com", "instagram.com", "linkedin.com", "twitter.com", "x.com",
+  "tiktok.com", "pinterest.com", "youtube.com",
+];
+
+function shouldSkipLinkCheck(url) {
+  try {
+    const host = new URL(url).hostname.replace(/^www\./, "");
+    return SKIP_LINK_CHECK_DOMAINS.some((d) => host === d || host.endsWith(`.${d}`));
+  } catch {
+    return false;
+  }
+}
+
 async function checkLinks($, pageUrl) {
   const host = new URL(pageUrl).hostname;
   const links = new Set();
   $("a[href]").each((i, el) => {
     const href = $(el).attr("href");
     if (!href || href.startsWith("#") || href.startsWith("mailto:") || href.startsWith("tel:") || href.startsWith("javascript:")) return;
+    if (shouldSkipLinkCheck(href)) return; // social platforms — can't reliably check, so don't flag
     try {
       const abs = new URL(href, pageUrl);
       abs.hash = "";
